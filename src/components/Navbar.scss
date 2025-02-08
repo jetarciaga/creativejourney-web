@@ -1,28 +1,41 @@
 @import "../assets/styles/variables";
 
 nav {
+  z-index: 1000;
   box-sizing: border-box;
   position: fixed;
+  display: flex;
   top: 0;
   left: 0;
   width: 100%;
   background-color: #fff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  ul {
+  .container {
     display: flex;
-    width: 70%;
-    margin: 1em auto;
-    li {
-      padding: 0.6em 2em;
-      list-style: none;
-      color: #000;
-      font-size: $font-size-sm;
-      transition: background-color 0.3s ease;
-      border-radius: 2em;
+    width: min(95vw, 1400px);
+    margin-inline: auto;
+    img {
+      width: 300px;
+      cursor: pointer;
+    }
+    ul {
+      display: flex;
+      align-items: center;
+      width: 70%;
+      margin: 1em auto;
 
-      &:hover {
-        cursor: pointer;
-        background-color: rgba(22, 255, 138, 0.2);
+      li {
+        padding: 0.6em 2em;
+        list-style: none;
+        color: #000;
+        font-size: 1.5rem;
+        transition: background-color 0.3s ease;
+        border-radius: 2em;
+
+        &:hover {
+          cursor: pointer;
+          background-color: rgba(22, 255, 138, 0.2);
+        }
       }
     }
   }

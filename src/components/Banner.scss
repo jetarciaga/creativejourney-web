@@ -1,7 +1,12 @@
-@import "../assets/styles/variables";
+@use "../assets/styles/variables";
+$images: (
+  "../assets/carousel_01.jpg",
+  "../assets/carousel_02.jpg",
+  "../assets/carousel_03.jpg"
+);
 
 .web-banner {
-  background-image: url("https://picsum.photos/1920/1080");
+  background-image: url("../assets/carousel_03.jpg");
   background-position: left;
   background-size: cover;
   margin-top: 1em;

@@ -1,0 +1,13 @@
+.card-container {
+  display: flex;
+  margin-top: 2em;
+  width: min(95vw, 1400px);
+  margin-inline: auto;
+  justify-content: space-between;
+  .card {
+    width: 100px;
+    height: 300px;
+    background-color: green;
+    border-radius: 1rem;
+  }
+}

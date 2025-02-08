@@ -1,12 +1,13 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+// import { useState } from "react";
+
 import "./App.scss";
 import Navbar from "./components/Navbar";
-import Banner from "./components/Banner";
+// import Banner from "./components/Banner";
+import Cards from "./components/Cards";
+import ImageSlider from "./components/ImageSlider";
 
 function App() {
-  const [count, setCount] = useState(0);
+  // const [count, setCount] = useState(0);
 
   return (
     <>
@@ -14,7 +15,10 @@ function App() {
         <Navbar />
       </header>
       <main>
-        <Banner />
+        {/* <img src={img} alt="Sample" /> */}
+        <ImageSlider />
+        {/* <Banner /> */}
+        <Cards />
       </main>
     </>
   );

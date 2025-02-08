@@ -1,3 +1,4 @@
+import "boxicons/css/boxicons.min.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./assets/styles/global.scss";
