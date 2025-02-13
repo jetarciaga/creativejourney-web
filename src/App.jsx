@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 // import Banner from "./components/Banner";
 import Cards from "./components/Cards";
 import ImageSlider from "./components/ImageSlider";
+import Footer from "./components/Footer";
 
 function App() {
   // const [count, setCount] = useState(0);
@@ -19,6 +20,7 @@ function App() {
         <ImageSlider />
         {/* <Banner /> */}
         <Cards />
+        <Footer />
       </main>
     </>
   );
