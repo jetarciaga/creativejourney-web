@@ -1,28 +1,23 @@
-// import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import MainLayout from "./layouts/MainLayout";
+import Home from "./pages/Home";
+import About from "./pages/About";
 
 import "./App.scss";
-import Navbar from "./components/Navbar";
-// import Banner from "./components/Banner";
-import Cards from "./components/Cards";
-import ImageSlider from "./components/ImageSlider";
-import Footer from "./components/Footer";
 
 function App() {
   // const [count, setCount] = useState(0);
 
   return (
-    <>
-      <header>
-        <Navbar />
-      </header>
-      <main>
-        {/* <img src={img} alt="Sample" /> */}
-        <ImageSlider />
-        {/* <Banner /> */}
-        <Cards />
-        <Footer />
-      </main>
-    </>
+    <Router>
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </MainLayout>
+    </Router>
   );
 }
 
