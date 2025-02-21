@@ -1,0 +1,25 @@
+.page-container {
+  width: min(95vw, 1325px);
+  margin-top: 125px;
+  margin-inline: auto;
+  justify-content: center;
+  column-gap: 5em;
+  row-gap: 1em;
+
+  h2 {
+    font-size: 2.5rem;
+    margin: 0 auto;
+  }
+
+  .text-wrapper {
+    display: flex;
+    column-gap: 5em;
+  }
+  h1 {
+    font-size: 6rem;
+    line-height: 1.2em;
+  }
+  p {
+    font-size: 1.6em;
+  }
+}

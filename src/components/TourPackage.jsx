@@ -15,7 +15,7 @@ const TourPackage = () => {
       <Card
         title="Cebu"
         imgUrl={riceTerraces}
-        tagline="Escape to Bohol – Where Pristine Beaches, Chocolate Hills, and Adventure Await!"
+        tagline="Discover Cebu – Where History, Paradise, and Adventure Unite!"
         linkTo="/"
       />
       <Card
@@ -27,7 +27,7 @@ const TourPackage = () => {
       <Card
         title="Boracay"
         imgUrl={hinagdanan}
-        tagline="Escape to Bohol – Where Pristine Beaches, Chocolate Hills, and Adventure Await!"
+        tagline="Boracay – Where Sun, Sand, and Paradise Meet!"
         linkTo="/"
       />
     </section>
