@@ -1,5 +1,6 @@
 import "./About.scss";
-import testImage from "../assets/images/Rice-Terraces.jpg";
+import teamImage from "../assets/images/team.jpg";
+import underwater from "../assets/images/underwater.jpg";
 
 const About = () => {
   return (
@@ -19,8 +20,34 @@ const About = () => {
           </p>
         </article>
         <aside>
-          <img src={testImage} alt="" style={{ width: "700px" }} />
+          <div className="image-container">
+            <img src={teamImage} alt="CreativeJourneys Team" />
+          </div>
         </aside>
+      </section>
+      <p style={{ margin: 0 }}>
+        Our extensive experience and deep understanding of the travel industry
+        allow us to offer unparalleled service and insights, ensuring every
+        journey is memorable and seamless. We pride ourselves on our attention
+        to detail, personalized service, and the ability to handle complex
+        travel arrangements with ease.
+      </p>
+      <section className="mission-vision">
+        <section className="column-section">
+          <h2>Our Mission</h2>
+          <p>
+            At Creative Journeys PH, our mission is to transform travel dreams
+            into reality by providing exceptional, personalized travel
+            solutions. We are dedicated to delivering memorable experiences
+            through our expertise, commitment to excellence, and passion for
+            travel.
+          </p>
+        </section>
+        <section className="column-section">
+          <div className="mission-img">
+            <img src={underwater} alt="" />
+          </div>
+        </section>
       </section>
     </section>
   );
