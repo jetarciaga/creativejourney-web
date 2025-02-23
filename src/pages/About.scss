@@ -45,6 +45,9 @@ $breakpoint: 1300px;
 
       .text-content {
         text-align: right;
+        figure {
+          width: 100%;
+        }
       }
     }
 
@@ -53,14 +56,19 @@ $breakpoint: 1300px;
       .text-content {
         text-align: left;
       }
+      figure {
+        width: 100%;
+        img {
+          translate: -15% 0;
+        }
+      }
     }
 
     figure {
       overflow: hidden;
-      width: 350px;
+      width: 900px;
       aspect-ratio: 1/1;
       border-radius: 25px;
-      // margin: 0 auto;
 
       img {
         width: 150%;

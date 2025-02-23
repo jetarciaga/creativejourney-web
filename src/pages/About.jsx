@@ -59,9 +59,10 @@ const About = () => {
               <h2>Our Vision</h2>
             </header>
             <p>
-              To be one of the leading travel agencies in the Philippines, known
-              for our innovative solutions, exceptional service, and unwavering
-              dedication to exceeding client expectations.
+              To be one of the leading destination management company in the
+              Philippines, known for our innovative solutions, exceptional
+              service, and unwavering dedication to exceeding client
+              expectations.
             </p>
           </div>
           <figure className="img-crop">
