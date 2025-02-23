@@ -5,7 +5,6 @@ import underwater from "../assets/images/underwater.jpg";
 const About = () => {
   return (
     <section className="page-container">
-      <h2>Our Purpose</h2>
       <section className="text-wrapper">
         <article>
           <h1>Your Gateway to the Best Worry-Free Travel Deals!</h1>
@@ -25,15 +24,15 @@ const About = () => {
           </div>
         </aside>
       </section>
-      <p style={{ margin: 0 }}>
+      <p>
         Our extensive experience and deep understanding of the travel industry
         allow us to offer unparalleled service and insights, ensuring every
         journey is memorable and seamless. We pride ourselves on our attention
         to detail, personalized service, and the ability to handle complex
         travel arrangements with ease.
       </p>
-      <section className="mission-vision">
-        <section className="column-section">
+      <section className="mission">
+        <section className="text-section">
           <h2>Our Mission</h2>
           <p>
             At Creative Journeys PH, our mission is to transform travel dreams
@@ -43,7 +42,7 @@ const About = () => {
             travel.
           </p>
         </section>
-        <section className="column-section">
+        <section className="img-section">
           <div className="mission-img">
             <img src={underwater} alt="" />
           </div>
