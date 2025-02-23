@@ -1,6 +1,6 @@
 $breakpoint: 1300px;
 
-.page-container {
+.about-container {
   width: min(95vw, 1325px);
   margin-top: 125px;
   margin-inline: auto;
@@ -8,45 +8,62 @@ $breakpoint: 1300px;
   display: flex;
   flex-direction: column;
 
-  @media (max-width: $breakpoint) {
-    aside {
-      .image-container {
-        margin-top: 0;
+  .about-wrapper {
+    display: flex;
+    column-gap: 3em;
+    article {
+      display: flex;
+      flex-direction: column;
+      width: 40%;
+      h1 {
+        text-align: left;
+        font-size: 5.5em;
+        line-height: 1em;
       }
     }
-
-    p {
-      align-self: center;
-      width: 550px;
-      text-align: center;
+    figure {
+      width: 600px;
+      margin: 0 auto;
+      img {
+        scale: 120%;
+        translate: 0 -7%;
+      }
     }
   }
 
-  .mission {
+  .company-profile {
     display: flex;
-    flex-direction: row-reverse;
+    flex-direction: column;
     margin: 0 auto;
     margin-top: 5em;
-    column-gap: 3em;
     width: 80%;
 
-    .text-section {
-      flex: 2;
+    article {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .text-content {
+        text-align: right;
+      }
     }
 
-    .img-section {
-      width: 400px;
+    article:nth-child(odd) {
+      flex-direction: row-reverse;
+      .text-content {
+        text-align: left;
+      }
+    }
 
-      .mission-img {
-        overflow: hidden;
-        position: relative;
-        height: 300px;
-        border-radius: 2em;
+    figure {
+      overflow: hidden;
+      width: 350px;
+      aspect-ratio: 1/1;
+      border-radius: 25px;
+      // margin: 0 auto;
 
-        img {
-          position: absolute;
-          height: 100%;
-        }
+      img {
+        width: 150%;
       }
     }
   }
@@ -56,35 +73,6 @@ $breakpoint: 1300px;
     margin: 0 auto;
   }
 
-  .text-wrapper {
-    justify-content: space-between;
-    display: flex;
-    column-gap: 5em;
-    width: 100%;
-    flex-wrap: wrap;
-
-    @media (max-width: $breakpoint) {
-      justify-content: center;
-      p {
-        max-width: 500px;
-      }
-    }
-  }
-  h1 {
-    margin-top: 0;
-    font-size: 6rem;
-    line-height: 1.2em;
-    text-align: left;
-    min-width: 500px;
-    max-width: 550px;
-  }
-  article {
-    p {
-      min-width: 500px;
-      max-width: 550px;
-      font-size: 1.6em;
-    }
-  }
   p {
     font-size: 1.6em;
   }
