@@ -1,20 +1,15 @@
 import "./TourPackage.scss";
 import hinagdanan from "../assets/images/hinagdanan-cave.jpg";
-import bohol2 from "../assets/images/pahangog-twin-falls.jpg";
-import riceTerraces from "../assets/images/Rice-Terraces.jpg";
+import boracayBeach from "../assets/images/boracayBeach.jpg";
+import cebuWhaleShark from "../assets/images/cebuWhaleShark.jpg";
 import Card from "./Card";
 
 const TourPackage = () => {
-  const data = {
-    title: "Sample",
-    tagline: "Sample Tagline",
-  };
-
   return (
     <section className="card-container">
       <Card
         title="Cebu"
-        imgUrl={riceTerraces}
+        imgUrl={cebuWhaleShark}
         tagline="Discover Cebu – Where History, Paradise, and Adventure Unite!"
         linkTo="/"
       />
@@ -26,7 +21,7 @@ const TourPackage = () => {
       />
       <Card
         title="Boracay"
-        imgUrl={hinagdanan}
+        imgUrl={boracayBeach}
         tagline="Boracay – Where Sun, Sand, and Paradise Meet!"
         linkTo="/"
       />
