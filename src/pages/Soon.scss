@@ -1,0 +1,24 @@
+.soon-container {
+  margin-top: 10em;
+  display: flex;
+
+  section {
+    display: flex;
+    margin: 0 auto;
+    height: 80vh;
+    header {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      h1 {
+        margin: 0 auto;
+      }
+      i {
+        font-size: 8em;
+        color: #f3b239;
+      }
+    }
+    justify-content: center;
+  }
+}
