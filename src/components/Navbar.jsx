@@ -8,7 +8,12 @@ const Navbar = () => {
   return (
     <nav aria-label="Main Navigation">
       <div className="container">
-        <img src={logo} className="navbar-logo" alt="CreativeJourneys Logo" />
+        <img
+          src={logo}
+          className="navbar-logo"
+          alt="CreativeJourneys Logo"
+          onClick={() => navigate("/")}
+        />
         <ul>
           <li onClick={() => navigate("/")}>Home</li>
           <li onClick={() => navigate("/about")}>About</li>
