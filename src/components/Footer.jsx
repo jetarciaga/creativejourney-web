@@ -43,25 +43,30 @@ const Footer = () => {
             </ul>
           </div>
         </section>
-        <section className="social">
-          <figure>
-            <img src="" alt="" />
-          </figure>
-          <p>
-            We specialize in personalized travel programs for FIT,GIT, and MICE.
-            Our commitment is to offerexceptional service at competitive prices,
-            ensuringevery aspect of your travel experience is handledwith care
-            and attention to detail.
-          </p>
+        <section className="navigation">
+          <header>
+            <h2>Creative Journeys PH</h2>
+          </header>
+          <ul>
+            <li onClick={() => navigate("/about")}>About</li>
+            <li onClick={() => navigate("/services")}>Services</li>
+            <li onClick={() => navigate("/contact")}>Contact</li>
+          </ul>
         </section>
         <section className="contact">
           <header>
             <h2>Talk To Us</h2>
           </header>
           <ul>
-            <li>#4 San Guillermo Street, Brgy. Bayanan, Muntinlupa City</li>
+            <li>
+              #4 San Guillermo Street, <br />
+              Brgy. Bayanan, Muntinlupa City
+            </li>
             <li style={{ fontWeight: 600 }}>hello@creativejourneysph.com</li>
-            <li>+639610059847</li>
+            <li>
+              <i className="bx bxl-whatsapp" />
+              <span>+63 998 9629 055</span>
+            </li>
           </ul>
         </section>
       </div>
