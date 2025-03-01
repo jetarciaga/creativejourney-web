@@ -70,6 +70,14 @@ const Footer = () => {
           </ul>
         </section>
       </div>
+      <div className="copyright">
+        <section>
+          Copyright <i className="bx bx-copyright" /> 2025
+        </section>
+        {/* <figure>
+          <img src={logo} alt="" />
+        </figure> */}
+      </div>
     </div>
   );
 };
