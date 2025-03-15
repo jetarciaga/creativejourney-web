@@ -6,7 +6,9 @@ const Home = () => {
   return (
     <>
       <ImageSlider />
-      <h1>Your Trusted DMC partner in the Philippines</h1>
+      <h1 style={{ fontFamily: "Amatic SC", fontWeight: 900, fontSize: "5em" }}>
+        - Your Wonderful Journey Starts Here -{" "}
+      </h1>
       <TourPackage />
     </>
   );

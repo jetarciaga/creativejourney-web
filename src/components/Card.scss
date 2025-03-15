@@ -26,6 +26,7 @@
 
     p {
       position: absolute;
+      padding: 0.5em;
       top: 120%;
       left: 50%;
       color: white;
@@ -39,7 +40,7 @@
         position: absolute;
         font-size: 1.5rem;
         transition: 400ms ease-in-out;
-        top: 150%;
+        bottom: -50%;
         right: 10%;
         color: white;
         text-decoration: none;

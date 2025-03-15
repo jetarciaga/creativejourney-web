@@ -2,6 +2,7 @@ import "./TourPackage.scss";
 import hinagdanan from "../assets/images/hinagdanan-cave.jpg";
 import boracayBeach from "../assets/images/boracayBeach.jpg";
 import cebuWhaleShark from "../assets/images/cebuWhaleShark.jpg";
+import Xinjiang from "../assets/images/xinjiang.jpg";
 import Card from "./Card";
 
 const TourPackage = () => {
@@ -23,6 +24,12 @@ const TourPackage = () => {
         title="Boracay"
         imgUrl={boracayBeach}
         tagline="Boracay – Where Sun, Sand, and Paradise Meet!"
+        linkTo="/"
+      />
+      <Card
+        title="Xinjiang"
+        imgUrl={Xinjiang}
+        tagline="Unforgettable Adventures, Rich Cultures, and Breathtaking Landscapes Await!"
         linkTo="/"
       />
     </section>
