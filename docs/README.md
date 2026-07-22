@@ -22,9 +22,11 @@ later phase is required for an earlier one to deliver value.
 | **3 · Triage** | Leads auto-segmented and scored; drafts prepared for the agent | Optional |
 | **4 · Ops surface** | Staff can browse and work leads outside email | Optional |
 
-Phase 0 is a genuine blocker, not a nice-to-have. Verified against the live site on
-2026-07-22: `https://www.creativejourneysph.com/contact` returns **308 → `/`**. A form on that
-page cannot load, so nothing in Phase 1 can be tested end-to-end until the redirect is fixed.
+The Phase 0 routing blocker is **resolved**. P0-1 and P0-2 shipped in PR #2 (`dd5a0ad`);
+verified against the live site on 2026-07-22, `https://www.creativejourneysph.com/contact`
+returns **`200`**, as do all other routes. `/api/inquiry` returns `404`, confirming the path is
+clear for Phase 1's function. Remaining Phase 0 work is P0-3 through P0-9 — none of it blocks
+Phase 1.
 
 ## Documents
 
