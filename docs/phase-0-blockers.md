@@ -3,14 +3,14 @@
 **Goal:** make the Contact page reachable and the site usable, so Phase 1 has somewhere to ship
 to. No backend work here.
 
-**Blocking:** yes. Verified 2026-07-22 — `https://www.creativejourneysph.com/contact` returns
-`308 → /`. A form on that page cannot load.
+**Blocking:** no longer. The routing blocker was resolved 2026-07-22 in PR #2 (`dd5a0ad`) —
+`https://www.creativejourneysph.com/contact` now returns `200`. Phase 1 is unblocked.
 
-**Depends on:** nothing. Can start immediately.
+**Depends on:** nothing. P0-3 through P0-9 remain and can be worked in any order.
 
 ---
 
-## P0-1 · Fix the production routing
+## P0-1 · Fix the production routing — ✅ DONE (PR #2, `dd5a0ad`)
 
 `vercel.json` declares `statusCode: 308` inside a `rewrites` rule. `statusCode` is a `redirects`
 property, and Vercel honours it — so every path that isn't an existing file redirects to `/`.
@@ -32,13 +32,21 @@ working around. The `(?!api/)` exclusion keeps the path clear for Phase 1's func
 **Acceptance:** after deploy, `curl -sI https://www.creativejourneysph.com/contact` returns
 `200`, and `/about`, `/contact`, `/services` all render their own page on a hard refresh.
 
-## P0-2 · Verify the whole route table
+## P0-2 · Verify the whole route table — ✅ DONE
 
 Check every declared route plus one unknown path.
 
 **Acceptance:** `/`, `/about`, `/contact` → `200` with correct content. An unknown path → `200`
 rendering the `Soon` placeholder (the `*` catch-all in `App.jsx`), **not** a redirect and not a
 Vercel 404.
+
+**Result 2026-07-22.** Status codes measured against production with `curl -sI`: `/`, `/about`,
+`/contact`, `/services`, `/privacy`, unknown paths and `/apifoo` all `200`; `/favicon.svg` `200`
+(filesystem still wins over the rewrite); `/api/inquiry` `404` (exclusion works — path clear for
+Phase 1). Rendering verified in a browser **against the preview deployment**: `/about` and
+`/contact` render their own pages, `/services` and an unknown path both render `Soon` with the
+URL preserved, no console errors on hard refresh. Production was checked by status code only —
+`curl` cannot distinguish SPA routes, since every path returns the same `index.html`.
 
 ## P0-3 · Compress images
 
@@ -117,8 +125,8 @@ who it is shared with, and a contact address for data-subject requests.
 
 ## Definition of done
 
-- [ ] `/contact` returns `200` in production and renders the Contact page on hard refresh
-- [ ] Every route in `App.jsx` reachable by direct URL
+- [x] `/contact` returns `200` in production and renders the Contact page on hard refresh
+- [x] Every route in `App.jsx` reachable by direct URL
 - [ ] `src/assets` under 2MB, no image over 300KB
 - [ ] `npm run lint` passes with no warnings
 - [ ] `/privacy` live and linked from the footer

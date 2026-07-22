@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Marketing site for Creative Journeys Travel PH, a Philippines-based wholesaler travel agency (FIT / GIT / MICE). Static React SPA — no backend, no API, no database, no tests. Deployed on Vercel.
 
-**Active work: adding an inquiry form to `/contact`.** The plan of record is in `docs/` — start with `docs/README.md`. `docs/architecture.md` has the stack and data model, `docs/decisions.md` records why each choice was made and what would reverse it, and `docs/phase-0-blockers.md` through `phase-4-ops.md` hold the staged task breakdown. Phase 0 is a hard blocker: `/contact` currently 308-redirects in production (see Deployment gotcha below), so nothing can be tested end-to-end until `vercel.json` is fixed.
+**Active work: adding an inquiry form to `/contact`.** The plan of record is in `docs/` — start with `docs/README.md`. `docs/architecture.md` has the stack and data model, `docs/decisions.md` records why each choice was made and what would reverse it, and `docs/phase-0-blockers.md` through `phase-4-ops.md` hold the staged task breakdown. Phase 0's routing blocker is **resolved** — P0-1 and P0-2 shipped in PR #2 (`dd5a0ad`), so `/contact` is reachable in production and Phase 1 can be tested end-to-end. Remaining Phase 0 work is P0-3 through P0-9.
 
 ## Commands
 
@@ -42,24 +42,26 @@ Responsive breakpoint in use is `@media screen and (max-width: 768px)` (Navbar, 
 
 Icons are Boxicons, used as CSS classes (`<i className="bx bxs-paper-plane" />`). The stylesheet is imported in `main.jsx` from the `boxicons` package, which is only present as a transitive dependency of `react-boxicons` — `package.json` does not list it directly. If icons break after a dependency change, that's why.
 
-## Deployment gotcha
+## Routing
 
-**Every deep link 308-redirects to the home page in production.** `vercel.json` declares `statusCode: 308` inside a `rewrites` rule — normally a `redirects` property — and Vercel honours it, so the rule behaves as a redirect rather than an SPA rewrite. Measured against the live site 2026-07-22:
-
-| Path | Result |
-|---|---|
-| `/contact`, `/about`, `/services`, any unknown path | `308` → `/` |
-| `/favicon.svg` (file exists in build output) | `200` |
-| `/assets/index.js` (no such file) | `308` → `/` |
-
-Existing files win; everything else is redirected. So routes declared in `App.jsx` work in the dev server and are unreachable in production — adding a page means editing `vercel.json` too, not just `App.jsx`.
-
-An `/api/*` path returns `308` today, but only because nothing is deployed there. By the `favicon.svg` precedent a real serverless function should be served ahead of the rewrite — untested, since no function exists yet. Anything adding a backend should make this explicit rather than rely on it:
+Deep links work in production. `vercel.json` serves the SPA shell at every non-API path and lets React Router resolve the route client-side:
 
 ```json
 { "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }] }
 ```
 
-That serves the SPA shell at every non-API path and lets React Router handle routing client-side, which is the standard fix for the 404-on-refresh problem this config appears to have been working around.
+Measured against the live site 2026-07-22, after PR #2 (`dd5a0ad`):
+
+| Path | Result |
+|---|---|
+| `/`, `/about`, `/contact`, `/services`, `/privacy`, any unknown path | `200` |
+| `/favicon.svg` (file exists in build output) | `200` |
+| `/api/inquiry` (nothing deployed there yet) | `404` |
+
+Vercel's filesystem check runs ahead of the rewrite, so real static files still win — that's why `favicon.svg` returns its own contents rather than the SPA shell. The `(?!api/)` exclusion reserves `/api` for the Phase 1 serverless function; the `404` confirms those paths fall through the rewrite instead of being swallowed by it.
+
+Adding a page means adding the route in `App.jsx` only — `vercel.json` needs no change, since the catch-all already covers every path.
+
+**History, so the old config isn't reintroduced:** this file previously declared `statusCode: 308` inside a `rewrites` rule. `statusCode` is a `redirects` property, and Vercel honours it, so every path that wasn't an existing file 308-redirected to `/` — routes worked in the dev server and were unreachable in production. Fixed in PR #2.
 
 `vite.config.js` proxies `/api` to `http://localhost:3000`, which is the dev server itself. It's vestigial — there is no API.
