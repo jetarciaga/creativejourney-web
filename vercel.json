@@ -1,9 +1,8 @@
 {
     "rewrites": [
         {
-            "source": "/(.*)",
-            "destination": "/",
-            "statusCode": 308
+            "source": "/((?!api/).*)",
+            "destination": "/index.html"
         }
     ]
 }
