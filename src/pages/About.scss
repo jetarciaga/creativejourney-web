@@ -8,6 +8,10 @@ $breakpoint: 1300px;
   display: flex;
   flex-direction: column;
 
+  picture {
+    display: contents;
+  }
+
   .about-wrapper {
     display: flex;
     column-gap: 3em;

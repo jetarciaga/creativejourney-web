@@ -1,6 +1,6 @@
-import banner_1 from "../assets/carousel_01.jpg";
-import banner_2 from "../assets/carousel_02.jpg";
-import banner_3 from "../assets/carousel_03.jpg";
+import banner_1 from "../assets/carousel_01.webp";
+import banner_2 from "../assets/carousel_02.webp";
+import banner_3 from "../assets/carousel_03.webp";
 import "./ImageSlider.scss";
 import { useState, useEffect } from "react";
 
@@ -11,7 +11,6 @@ const ImageSlider = () => {
   const [isPaused, setIsPaused] = useState(false);
 
   const showNextImage = () => {
-    // setIsPaused(true);
     setImageIndex((index) => {
       if (index === IMAGES.length - 1) return 0;
       return index + 1;
@@ -19,7 +18,6 @@ const ImageSlider = () => {
   };
 
   const showPrevImage = () => {
-    // setIsPaused(true);
     setImageIndex((index) => {
       if (index === 0) return IMAGES.length - 1;
       return index - 1;
@@ -39,13 +37,18 @@ const ImageSlider = () => {
   }, [imageIndex, isPaused]);
 
   return (
-    <section className="banner-container">
+    <section
+      className="banner-container"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <div className="slide-wrapper">
         {IMAGES.map((img, index) => (
           <img
             src={img}
             key={index}
             className="img-slider"
+            alt=""
             style={{ translate: `${-100 * imageIndex}%` }}
           />
         ))}

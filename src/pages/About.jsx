@@ -1,7 +1,10 @@
 import "./About.scss";
 import teamImage from "../assets/images/team.jpg";
+import teamImageWebp from "../assets/images/team.webp";
 import underwater from "../assets/images/underwater.jpg";
+import underwaterWebp from "../assets/images/underwater.webp";
 import tarsier from "../assets/images/tarsier.jpg";
+import tarsierWebp from "../assets/images/tarsier.webp";
 
 const About = () => {
   return (
@@ -23,7 +26,10 @@ const About = () => {
         </article>
 
         <figure className="image-container">
-          <img src={teamImage} alt="CreativeJourneys Team" />
+          <picture>
+            <source srcSet={teamImageWebp} type="image/webp" />
+            <img src={teamImage} alt="CreativeJourneys Team" />
+          </picture>
           <figcaption>Meet the CreativeJourneys PH Team</figcaption>
         </figure>
       </div>
@@ -49,7 +55,10 @@ const About = () => {
             </p>
           </div>
           <figure className="img-crop">
-            <img src={underwater} alt="" />
+            <picture>
+              <source srcSet={underwaterWebp} type="image/webp" />
+              <img src={underwater} alt="" loading="lazy" />
+            </picture>
             <figcaption>Underwater adventure with turtle</figcaption>
           </figure>
         </article>
@@ -66,7 +75,10 @@ const About = () => {
             </p>
           </div>
           <figure className="img-crop">
-            <img src={tarsier} alt="" />
+            <picture>
+              <source srcSet={tarsierWebp} type="image/webp" />
+              <img src={tarsier} alt="" loading="lazy" />
+            </picture>
             <figcaption>Tarsier from Philippines</figcaption>
           </figure>
         </article>

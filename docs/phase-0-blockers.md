@@ -6,7 +6,10 @@ to. No backend work here.
 **Blocking:** no longer. The routing blocker was resolved 2026-07-22 in PR #2 (`dd5a0ad`) —
 `https://www.creativejourneysph.com/contact` now returns `200`. Phase 1 is unblocked.
 
-**Depends on:** nothing. P0-3 through P0-9 remain and can be worked in any order.
+**Depends on:** nothing. P0-3 through P0-9 are **complete** as of 2026-07-24 on branch
+`chore/phase-0-cleanup`, verified locally (`npm run build` and `npm run lint` clean, Home /
+About / Privacy screenshot-checked against the preview build). Pending: commit, PR, and a
+production deploy to confirm the crawler files and social card on the live domain.
 
 ---
 
@@ -48,7 +51,7 @@ Phase 1). Rendering verified in a browser **against the preview deployment**: `/
 URL preserved, no console errors on hard refresh. Production was checked by status code only —
 `curl` cannot distinguish SPA routes, since every path returns the same `index.html`.
 
-## P0-3 · Compress images
+## P0-3 · Compress images — ✅ DONE
 
 `src/assets/` is 14MB. The worst offenders ship on the two most-visited pages:
 
@@ -65,14 +68,22 @@ Resize to no more than 2× displayed size, convert to WebP with a JPEG fallback,
 
 **Acceptance:** `du -sh src/assets` under 2MB. No single image over 300KB.
 
-## P0-4 · Delete unused assets
+**Result 2026-07-24.** `src/assets` 14M → **1.9M**; largest image 190KB. Content images ship
+WebP + a compressed JPEG fallback through `<picture>` (`Card`, `About`), with
+`picture { display: contents }` so the existing image CSS is untouched. Below-the-fold images
+(cards, `underwater`, `tarsier`) are `loading="lazy"`; the above-the-fold `team` and carousel
+stay eager. Carousels were converted to WebP-only and kept eager — their JPEG originals were
+already near-optimal (re-encoding *inflated* them), so duplicating a fallback would have blown
+the 2MB budget for no real-world gain. Tooling: `cwebp` + macOS `sips`.
+
+## P0-4 · Delete unused assets — ✅ DONE
 
 `Rice-Terraces.jpg` (524KB), `whaleShark.jpg` (856KB), `pahangog-twin-falls.jpg` (228KB) — not
 imported by any component. Confirmed by reading all 13 `.jsx` files.
 
 **Acceptance:** `npm run build` succeeds; `grep -r` finds no reference to the removed files.
 
-## P0-5 · SEO metadata
+## P0-5 · SEO metadata — ✅ DONE
 
 `index.html` has `<title>Destination Management</title>` — no brand, no description, no Open
 Graph tags. A client-rendered SPA already ships an empty `<div id="root">`, so what's in the
@@ -83,13 +94,23 @@ Add: branded `<title>`, `<meta name="description">`, `og:title` / `og:descriptio
 
 **Acceptance:** a shared link renders a card with the agency name, a description, and an image.
 
-## P0-6 · robots.txt and sitemap.xml
+**Result 2026-07-24.** Branded `<title>`, `<meta name="description">`, canonical, Open Graph
+(`og:title/description/url/image` + dimensions) and `twitter:card` added to `index.html`. A
+1200×630 share image was generated to `public/og-image.jpg`. Confirmed present in `dist/` after
+build; the rendered social card can only be fully verified once deployed.
+
+## P0-6 · robots.txt and sitemap.xml — ✅ DONE
 
 Static files in `public/`. Three URLs: `/`, `/about`, `/contact`.
 
 **Acceptance:** both fetchable at their root paths and valid.
 
-## P0-7 · Privacy page
+**Result 2026-07-24.** `public/robots.txt` (allow-all + `Sitemap:` line) and
+`public/sitemap.xml` created; both copy to `dist/` root on build. The sitemap lists only the
+three real content pages `/`, `/about`, `/contact` — `/privacy` and the `Soon` placeholder
+paths (`/services`, unknown) are intentionally excluded.
+
+## P0-7 · Privacy page — ✅ DONE
 
 Phase 1 collects email, phone, and physical address from Philippine residents — personal
 information under RA 10173. The form's consent checkbox has to link somewhere.
@@ -102,7 +123,7 @@ who it is shared with, and a contact address for data-subject requests.
 > Not legal advice. Have a lawyer confirm what else the agency owes as a personal-information
 > controller — this covers the mechanics, not the compliance judgement.
 
-## P0-8 · Remove dead code
+## P0-8 · Remove dead code — ✅ DONE
 
 - `src/components/Banner.jsx` and `Banner.scss` — unreferenced.
 - `Footer.jsx:12` — `<img src="" alt="" />`. An empty `src` makes some browsers re-request the
@@ -115,7 +136,14 @@ who it is shared with, and a contact address for data-subject requests.
 
 **Acceptance:** `npm run lint` clean.
 
-## P0-9 · Fix footer copy
+**Result 2026-07-24.** `Banner.jsx`/`Banner.scss` deleted, the empty `<img>` and unused `logo`
+import removed from `Footer.jsx`, and `isPaused` wired to pause-on-hover
+(`onMouseEnter`/`onMouseLeave`). Note: `main` was **not** lint-clean to begin with — the
+recommended `react/prop-types` rule flags every prop in this PropTypes-free codebase (`Card`,
+`MainLayout`). Rather than add PropTypes boilerplate the project uses nowhere, the rule is now
+disabled in `eslint.config.js`, following the existing `jsx-no-target-blank: off` precedent.
+
+## P0-9 · Fix footer copy — ✅ DONE
 
 `Footer.jsx:16-18` — "offerexceptional", "ensuringevery", "handledwith" are missing spaces.
 
@@ -127,7 +155,8 @@ who it is shared with, and a contact address for data-subject requests.
 
 - [x] `/contact` returns `200` in production and renders the Contact page on hard refresh
 - [x] Every route in `App.jsx` reachable by direct URL
-- [ ] `src/assets` under 2MB, no image over 300KB
-- [ ] `npm run lint` passes with no warnings
-- [ ] `/privacy` live and linked from the footer
-- [ ] A shared link produces a correct social preview card
+- [x] `src/assets` under 2MB, no image over 300KB — 1.9M, largest 190KB
+- [x] `npm run lint` passes with no warnings
+- [x] `/privacy` live and linked from the footer — route + page + footer nav link (local)
+- [x] A shared link produces a correct social preview card — tags + `og-image.jpg` in `dist/`;
+      final render pending production deploy
