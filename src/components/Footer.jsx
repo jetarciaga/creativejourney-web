@@ -1,4 +1,3 @@
-import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import "./Footer.scss";
 
@@ -8,14 +7,11 @@ const Footer = () => {
     <div className="footer-main">
       <div className="footer-container">
         <section className="social">
-          <figure>
-            <img src="" alt="" />
-          </figure>
           <p style={{ fontWeight: 600 }}>
-            We specialize in personalized travel programs for FIT,GIT, and MICE.
-            Our commitment is to offerexceptional service at competitive prices,
-            ensuringevery aspect of your travel experience is handledwith care
-            and attention to detail.
+            We specialize in personalized travel programs for FIT, GIT, and
+            MICE. Our commitment is to offer exceptional service at competitive
+            prices, ensuring every aspect of your travel experience is handled
+            with care and attention to detail.
           </p>
           <div className="social-links">
             <p>FOLLOW US:</p>
@@ -51,6 +47,7 @@ const Footer = () => {
             <li onClick={() => navigate("/about")}>About</li>
             <li onClick={() => navigate("/services")}>Services</li>
             <li onClick={() => navigate("/contact")}>Contact</li>
+            <li onClick={() => navigate("/privacy")}>Privacy</li>
           </ul>
         </section>
         <section className="contact">
@@ -74,63 +71,9 @@ const Footer = () => {
         <section>
           Copyright <i className="bx bx-copyright" /> 2025
         </section>
-        {/* <figure>
-          <img src={logo} alt="" />
-        </figure> */}
       </div>
     </div>
   );
 };
 
 export default Footer;
-
-{
-  /* <div className="top-row">
-        <div className="column">
-          <h3>Connect with us</h3>
-          <ul>
-            <li>
-              <i className="bx bxl-linkedin-square" />
-            </li>
-            <li>
-              <i className="bx bxl-facebook-square" />
-            </li>
-          </ul>
-        </div>
-        <div className="column">
-          <h3>How It Works</h3>
-        </div>
-        <div className="column">
-          <h3>
-            Why <br />
-            Creative Journeys
-          </h3>
-          <ul>
-            <li>Our Story</li>
-            <li>Why Philippines?</li>
-          </ul>
-        </div>
-        <div className="column">
-          <h3>Services</h3>
-          <ul>
-            <li>Book & Travel</li>
-            <li>Quotations</li>
-          </ul>
-        </div>
-        <div className="column">
-          <h3>Success Stories</h3>
-        </div>
-        <div className="column">
-          <h3>Talk To Us</h3>
-          <ul>
-            <li>#4 San Guillermo Street, Brgy. Bayanan, Muntinlupa City</li>
-            <li>hello@creativejourneysph.com</li>
-            <li>+639610059847</li>
-          </ul>
-        </div>
-      </div>
-      <div className="bottom-row">
-        <p>Copyright © 2025.</p>
-        <p>Creative Journeys Travel</p>
-      </div> */
-}
