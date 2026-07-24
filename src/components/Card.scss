@@ -47,6 +47,10 @@
       }
     }
 
+    picture {
+      display: contents;
+    }
+
     img {
       object-fit: cover;
       width: 100%;
