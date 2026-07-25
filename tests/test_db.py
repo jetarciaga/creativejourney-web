@@ -1,16 +1,14 @@
 """Integration tests for the DB layer (needs DATABASE_URL).
 
-Each test runs inside a transaction that is rolled back, so nothing persists and
-the per-year reference counter is never consumed by a test.
+Each test runs inside a transaction rolled back by the db_conn fixture, so
+nothing persists and the per-year reference counter is never consumed.
 """
 
 import os
 import re
-from datetime import date, timedelta
 
 import pytest
 
-from _lib.models import InquiryIn
 from _lib.db import insert_inquiry
 
 pytestmark = pytest.mark.skipif(
@@ -19,46 +17,14 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _valid_model(**overrides) -> InquiryIn:
-    today = date.today()
-    fields = {
-        "arrival_date": today + timedelta(days=30),
-        "departure_date": today + timedelta(days=35),
-        "nights": 5,
-        "pax_count": 2,
-        "accommodation_tier": "4_star",
-        "contact_name": "Juan dela Cruz",
-        "email": "juan@example.com",
-        "whatsapp": "0917 123 4567",
-        "address": "123 Mabini St, Cebu City",
-        "consent_privacy": True,
-        "website": "",
-        "elapsed_ms": 8000,
-    }
-    fields.update(overrides)
-    return InquiryIn(**fields)
-
-
-@pytest.fixture
-def db_conn():
-    import psycopg
-
-    conn = psycopg.connect(os.environ["DATABASE_URL"])
-    try:
-        yield conn
-    finally:
-        conn.rollback()  # never persist test rows or burn a reference number
-        conn.close()
-
-
-def test_insert_returns_wellformed_reference_code(db_conn):
-    ref = insert_inquiry(db_conn, _valid_model(), whatsapp_raw="0917 123 4567")
+def test_insert_returns_wellformed_reference_code(db_conn, make_model):
+    ref = insert_inquiry(db_conn, make_model(), whatsapp_raw="0917 123 4567")
     assert re.fullmatch(r"CJ-\d{4}-\d{4}", ref), ref
 
 
-def test_insert_persists_normalised_fields(db_conn):
+def test_insert_persists_normalised_fields(db_conn, make_model):
     ref = insert_inquiry(
-        db_conn, _valid_model(), whatsapp_raw="0917 123 4567", user_agent="pytest"
+        db_conn, make_model(), whatsapp_raw="0917 123 4567", user_agent="pytest"
     )
     with db_conn.cursor() as cur:
         cur.execute(
@@ -80,9 +46,8 @@ def test_insert_persists_normalised_fields(db_conn):
     assert ua == "pytest"
 
 
-def test_nights_mismatch_is_recorded(db_conn):
-    # dates span 5 nights; the enquirer submitted 3
-    ref = insert_inquiry(db_conn, _valid_model(nights=3), whatsapp_raw="0917 123 4567")
+def test_nights_mismatch_is_recorded(db_conn, make_model):
+    ref = insert_inquiry(db_conn, make_model(nights=3), whatsapp_raw="0917 123 4567")
     with db_conn.cursor() as cur:
         cur.execute(
             "select nights_submitted, nights_computed, nights_mismatch "
