@@ -44,8 +44,10 @@ CREATE TABLE inquiries (
   nights_computed    int     NOT NULL,
   nights_mismatch    boolean NOT NULL DEFAULT false,
   pax_count          int     NOT NULL,
-  accommodation_tier text    NOT NULL,   -- 3_star | 4_star | 5_star
-  room_config        text,
+  accommodation_tier text    NOT NULL
+                     CHECK (accommodation_tier IN ('3_star', '4_star', '5_star')),
+  room_config        text
+                     CHECK (room_config IN ('single', 'twin', 'double', 'triple', 'mixed')),
   budget_range       text,
   notes              text,
 
@@ -63,7 +65,8 @@ CREATE TABLE inquiries (
   consent_at         timestamptz NOT NULL,
 
   -- ops
-  status             text NOT NULL DEFAULT 'new',  -- new|triaged|contacted|quoted|won|lost
+  status             text NOT NULL DEFAULT 'new'
+                     CHECK (status IN ('new', 'triaged', 'contacted', 'quoted', 'won', 'lost')),
   ip_hash            text,                          -- SHA-256(ip + salt), never the raw IP
   user_agent         text,
 
