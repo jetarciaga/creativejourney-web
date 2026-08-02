@@ -164,6 +164,7 @@ class InquiryIn(BaseModel):
     notes:        str | None = Field(default=None, max_length=2000)
 
     consent_privacy: bool
+    consent_marketing: bool = False
     website:    str = ""     # honeypot — must stay empty
     elapsed_ms: int          # must exceed 3000
 
