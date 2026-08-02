@@ -34,3 +34,7 @@ htmlcov/
 *.njsproj
 *.sln
 *.sw?
+
+# Agent tooling (machine-local)
+.neon
+.claude/settings.local.json
