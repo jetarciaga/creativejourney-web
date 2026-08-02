@@ -16,7 +16,7 @@ CREATE TABLE reference_counters (
 CREATE FUNCTION next_reference_code() RETURNS text
 LANGUAGE plpgsql AS $$
 DECLARE
-  y int := EXTRACT(YEAR FROM now())::int;
+  y int := EXTRACT(YEAR FROM now() AT TIME ZONE 'Asia/Manila')::int;
   n int;
 BEGIN
   INSERT INTO reference_counters (year, last)
