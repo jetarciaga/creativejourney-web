@@ -4,7 +4,6 @@ Local dev secrets (DATABASE_URL, etc.) live in .env.local at the repo root. In
 CI they come from the environment instead, so a missing file is harmless.
 """
 
-import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -18,9 +17,9 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env.local")
 def db_conn():
     """A DB connection whose transaction is always rolled back, so tests never
     persist rows or consume a reference number."""
-    import psycopg
+    from _lib.db import connect
 
-    conn = psycopg.connect(os.environ["DATABASE_URL"])
+    conn = connect()
     try:
         yield conn
     finally:
