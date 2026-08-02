@@ -23,7 +23,7 @@ def valid_payload(**overrides):
         "accommodation_tier": "4_star",
         "contact_name": "Juan dela Cruz",
         "email": "juan@example.com",
-        "whatsapp": "0917 123 4567",
+        "whatsapp": "+63 917 123 4567",
         "address": "123 Mabini St, Cebu City",
         "consent_privacy": True,
         "website": "",
@@ -93,14 +93,30 @@ def test_unknown_field_rejected():
         InquiryIn(**valid_payload(surprise="gotcha"))
 
 
-def test_ph_mobile_normalises_to_e164():
-    m = InquiryIn(**valid_payload(whatsapp="0917 123 4567"))
+def test_ph_mobile_with_country_code_normalises_to_e164():
+    m = InquiryIn(**valid_payload(whatsapp="+63 917 123 4567"))
     assert m.whatsapp == "+639171234567"
+
+
+def test_foreign_mobile_with_country_code_normalises_to_e164():
+    # Most enquirers are travellers asking about visiting the Philippines,
+    # not PH residents — a UK number must normalise on its own merits, not
+    # be forced through a PH default region.
+    m = InquiryIn(**valid_payload(whatsapp="+44 7911 123456"))
+    assert m.whatsapp == "+447911123456"
+
+
+def test_whatsapp_without_country_code_rejected():
+    # No default region is assumed. A bare local-format number (this is a
+    # valid PH mobile, but nothing in the input says so) must be rejected
+    # rather than silently guessed as Philippine.
+    with pytest.raises(ValidationError):
+        InquiryIn(**valid_payload(whatsapp="0917 123 4567"))
 
 
 def test_invalid_whatsapp_rejected():
     with pytest.raises(ValidationError):
-        InquiryIn(**valid_payload(whatsapp="12345"))
+        InquiryIn(**valid_payload(whatsapp="+63 12345"))
 
 
 def test_nights_mismatch_is_flagged_not_rejected():

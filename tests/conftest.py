@@ -42,7 +42,7 @@ def make_model():
             "accommodation_tier": "4_star",
             "contact_name": "Juan dela Cruz",
             "email": "juan@example.com",
-            "whatsapp": "0917 123 4567",
+            "whatsapp": "+63 917 123 4567",
             "address": "123 Mabini St, Cebu City",
             "consent_privacy": True,
             "website": "",
