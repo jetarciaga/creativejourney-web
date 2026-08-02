@@ -80,3 +80,4 @@ CREATE TABLE inquiries (
 CREATE INDEX ON inquiries (submitted_at DESC);
 CREATE INDEX ON inquiries (status) WHERE status = 'new';
 CREATE INDEX ON inquiries (arrival_date);
+CREATE INDEX ON inquiries (ip_hash, submitted_at);  -- rate-limit lookup by IP within the last hour
