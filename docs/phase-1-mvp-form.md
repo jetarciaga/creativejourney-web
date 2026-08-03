@@ -62,7 +62,10 @@ a single object literal.
 
 ### P1-10 · `InquiryForm.jsx` + `useInquiryForm.js` + `.scss`
 State machine `idle → submitting → success | error`. Native input types. Real `<label htmlFor>`
-on every field. Auto-compute nights from the two dates, allow override.
+on every field. Auto-compute nights from the two dates, allow override. WhatsApp field needs a
+country-code selector (e.g. `react-phone-number-input`) so it always submits E.164 with an
+explicit country code — the backend no longer assumes a default region (see D-006 note: most
+enquirers are travellers, not PH residents).
 **Acceptance:** whole form is keyboard-navigable start to submit; every input has a programmatic
 label; server field errors map back to their inputs.
 

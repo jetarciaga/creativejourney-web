@@ -67,10 +67,14 @@ class InquiryIn(BaseModel):
     @field_validator("whatsapp")
     @classmethod
     def to_e164(cls, v: str) -> str:
+        # No default region: most enquirers are travellers asking about
+        # visiting the Philippines, not PH residents, so a bare local-format
+        # number is ambiguous rather than assumed Philippine. The country
+        # code must be explicit (leading "+").
         try:
-            num = phonenumbers.parse(v, "PH")
+            num = phonenumbers.parse(v, None)
         except phonenumbers.NumberParseException:
-            raise ValueError("Enter a valid WhatsApp number")
+            raise ValueError("Enter your WhatsApp number with country code, e.g. +63 917 123 4567")
         if not phonenumbers.is_valid_number(num):
             raise ValueError("Enter a valid WhatsApp number")
         return phonenumbers.format_number(num, PhoneNumberFormat.E164)

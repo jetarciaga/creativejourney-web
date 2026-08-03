@@ -130,7 +130,7 @@ CREATE INDEX ON outbox (next_retry_at) WHERE delivered_at IS NULL;
 | Number of nights | number | Yes | Auto-computed, overridable, mismatch flagged |
 | Number of pax | number | Yes | 1–500 (MICE groups get large) |
 | Preferred accommodation | radio | Yes | `3_star` \| `4_star` \| `5_star` |
-| WhatsApp number | tel | Yes | Normalised to E.164, default region PH |
+| WhatsApp number | tel | Yes | Normalised to E.164; country code required, no default region — most enquirers are travellers, not PH residents |
 | Email | email | Yes | |
 | Address | textarea | Yes | |
 | Privacy consent | checkbox | **Yes** | Added — unticked by default, links to `/privacy` |
@@ -164,6 +164,7 @@ class InquiryIn(BaseModel):
     notes:        str | None = Field(default=None, max_length=2000)
 
     consent_privacy: bool
+    consent_marketing: bool = False
     website:    str = ""     # honeypot — must stay empty
     elapsed_ms: int          # must exceed 3000
 
@@ -177,7 +178,13 @@ class InquiryIn(BaseModel):
     @field_validator("whatsapp")
     @classmethod
     def to_e164(cls, v):
-        num = phonenumbers.parse(v, "PH")
+        # No default region — country code is required, since most
+        # enquirers are travellers asking about the Philippines, not
+        # residents of it.
+        try:
+            num = phonenumbers.parse(v, None)
+        except phonenumbers.NumberParseException:
+            raise ValueError("Enter your WhatsApp number with country code, e.g. +63 917 123 4567")
         if not phonenumbers.is_valid_number(num):
             raise ValueError("Enter a valid WhatsApp number")
         return phonenumbers.format_number(num, PhoneNumberFormat.E164)
