@@ -1,20 +1,26 @@
 # Architecture
 
+> **Stack note (2026-08-15):** the frontend is rebuilt on Next.js 16 / TypeScript, matching the
+> maintainer's portfolio project (D-008). The inquiry backend moves from Python to a TypeScript
+> Route Handler (D-001 amendment), and the database moves from the planned Neon to Supabase
+> (D-009). The pipeline stages, data model, and validation rules below are unchanged in
+> substance — only the language and hosting primitives differ. See `decisions.md`.
+
 ## Request pipeline
 
 ```
-Browser (React)
+Browser (Next.js / React)
    │  POST /api/inquiry  (JSON)
    ▼
-Vercel Python Function ── api/inquiry.py
+Next.js Route Handler ── app/api/inquiry/route.ts
    │
    ├─ 1. Guard      origin check · honeypot · time-to-submit · rate limit
-   ├─ 2. Validate   Pydantic v2 → 422 with per-field errors
+   ├─ 2. Validate   Zod → 422 with per-field errors
    ├─ 3. Persist    ONE transaction: INSERT inquiry + INSERT outbox rows
    │                   ↳ commit point. Reference code CJ-2026-0001 returned here
    └─ 4. Respond    201 { reference_code }
 
-Vercel Cron (*/1) ── api/outbox_drain.py
+Vercel Cron (*/1) ── app/api/cron/outbox-drain/route.ts
    │
    ├─ SELECT ... FOR UPDATE SKIP LOCKED   (claim pending rows)
    ├─ Resend  → agency notification
@@ -22,8 +28,8 @@ Vercel Cron (*/1) ── api/outbox_drain.py
    └─ Sheets  → ops mirror (optional)
          ↳ each sink retried independently · exponential backoff · dead-letter at 5 attempts
 
-Vercel Cron (nightly) ── api/triage.py                          [Phase 3]
-   └─ Claude → segment · urgency · est. value · draft reply → UPDATE inquiry
+Vercel Cron (nightly) ── app/api/cron/triage/route.ts                [Phase 3]
+   └─ Claude (Anthropic TS SDK) → segment · urgency · est. value · draft reply → UPDATE inquiry
 ```
 
 The commit point is stage 3. Everything after it is best-effort and cannot fail the user's
@@ -36,9 +42,13 @@ non-empty. Reject if `elapsed_ms < 3000` — bots submit instantly. Rate limit 5
 `ip_hash` using a Postgres counter; no Redis needed at this volume. Cloudflare Turnstile only
 if spam actually materialises — don't add friction preemptively.
 
-**2 · Validate.** Pydantic v2. On `ValidationError`, return `422` with
+**2 · Validate.** Zod. On a failed `safeParse`, return `422` with
 `{"errors": {"field": "message"}}` so the form maps each message back to its input. Never a
-single generic error blob.
+single generic error blob. The schema is defined once, in `lib/inquiry/schema.ts`, and imported
+by both the Route Handler and the client form — the field list cannot drift between the two
+because there is only one copy of it. This is a structural improvement over the previous
+Python/TypeScript split, where a form field renamed on one side of the wire failed silently as a
+`422` with no compile-time signal on either side.
 
 **3 · Persist.** One transaction: `INSERT inquiry` + `INSERT outbox`. Reference code is
 `CJ-{year}-{sequence}` from a Postgres sequence, returned immediately so the enquirer has proof
@@ -142,115 +152,139 @@ CREATE INDEX ON outbox (next_retry_at) WHERE delivered_at IS NULL;
 
 ## Validation rules
 
-```python
-class InquiryIn(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+```typescript
+// lib/inquiry/schema.ts — the single source of truth for the form AND the Route Handler.
+// Declared `as const` / inferred, not hand-duplicated: the payload type is generated from
+// this schema, not maintained beside it. That is what makes "no field name appears in more
+// than one place" a compiler-checked property instead of a review checklist item.
 
-    arrival_date:   date
-    departure_date: date
-    nights:         int = Field(ge=0, le=365)
-    pax_count:      int = Field(ge=1, le=500)
-    accommodation_tier: Literal["3_star", "4_star", "5_star"]
+import { z } from "zod";
+import { parsePhoneNumberWithError } from "libphonenumber-js";
 
-    contact_name: str = Field(min_length=2, max_length=120)
-    company_name: str | None = Field(default=None, max_length=200)
-    email:        EmailStr
-    whatsapp:     str
-    address:      str = Field(min_length=5, max_length=500)
+const todayUTC = () => new Date(new Date().toISOString().slice(0, 10));
 
-    destination:  str | None = None
-    room_config:  Literal["single","twin","double","triple","mixed"] | None = None
-    budget_range: str | None = None
-    notes:        str | None = Field(default=None, max_length=2000)
+export const inquirySchema = z
+  .object({
+    arrivalDate: z.coerce.date(),
+    departureDate: z.coerce.date(),
+    nights: z.number().int().min(0).max(365),
+    paxCount: z.number().int().min(1).max(500),
+    accommodationTier: z.enum(["3_star", "4_star", "5_star"]),
 
-    consent_privacy: bool
-    consent_marketing: bool = False
-    website:    str = ""     # honeypot — must stay empty
-    elapsed_ms: int          # must exceed 3000
+    contactName: z.string().trim().min(2).max(120),
+    companyName: z.string().trim().max(200).optional(),
+    email: z.string().trim().email(),
+    // No default region — country code is required, since most enquirers are
+    // travellers asking about the Philippines, not residents of it.
+    whatsapp: z.string().trim().transform((val, ctx) => {
+      try {
+        const parsed = parsePhoneNumberWithError(val);
+        if (!parsed.isValid()) throw new Error("invalid");
+        return parsed.format("E.164");
+      } catch {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Enter your WhatsApp number with country code, e.g. +63 917 123 4567",
+        });
+        return z.NEVER;
+      }
+    }),
+    address: z.string().trim().min(5).max(500),
 
-    @field_validator("consent_privacy")
-    @classmethod
-    def must_consent(cls, v):
-        if not v:
-            raise ValueError("Privacy consent is required")
-        return v
+    destination: z.string().trim().optional(),
+    roomConfig: z
+      .enum(["single", "twin", "double", "triple", "mixed"])
+      .optional(),
+    budgetRange: z.string().trim().optional(),
+    notes: z.string().trim().max(2000).optional(),
 
-    @field_validator("whatsapp")
-    @classmethod
-    def to_e164(cls, v):
-        # No default region — country code is required, since most
-        # enquirers are travellers asking about the Philippines, not
-        # residents of it.
-        try:
-            num = phonenumbers.parse(v, None)
-        except phonenumbers.NumberParseException:
-            raise ValueError("Enter your WhatsApp number with country code, e.g. +63 917 123 4567")
-        if not phonenumbers.is_valid_number(num):
-            raise ValueError("Enter a valid WhatsApp number")
-        return phonenumbers.format_number(num, PhoneNumberFormat.E164)
+    consentPrivacy: z.literal(true, {
+      message: "Privacy consent is required",
+    }),
+    consentMarketing: z.boolean().default(false),
+    website: z.literal("").catch(() => {
+      throw new Error("spam");
+    }), // honeypot — must stay empty
+    elapsedMs: z.number().int().min(3001), // must exceed 3000
+  })
+  .strict() // rejects unexpected keys — the Zod equivalent of extra="forbid"
+  .refine((data) => data.arrivalDate >= todayUTC(), {
+    message: "Arrival date cannot be in the past",
+    path: ["arrivalDate"],
+  })
+  .refine((data) => data.departureDate > data.arrivalDate, {
+    message: "Departure must be after arrival",
+    path: ["departureDate"],
+  })
+  .refine(
+    (data) =>
+      (data.arrivalDate.getTime() - todayUTC().getTime()) /
+        (1000 * 60 * 60 * 24) <=
+      730,
+    { message: "Arrival date is too far in the future", path: ["arrivalDate"] },
+  );
 
-    @model_validator(mode="after")
-    def check_dates(self):
-        if self.arrival_date < date.today():
-            raise ValueError("Arrival date cannot be in the past")
-        if self.departure_date <= self.arrival_date:
-            raise ValueError("Departure must be after arrival")
-        if (self.arrival_date - date.today()).days > 730:
-            raise ValueError("Arrival date is too far in the future")
-        return self
+export type InquiryIn = z.infer<typeof inquirySchema>;
 ```
 
-`extra="forbid"` rejects unexpected fields — cheap defence against parameter pollution. The
-nights mismatch is computed in the handler and flagged, never rejected.
+`.strict()` rejects unexpected fields — cheap defence against parameter pollution, same intent
+as Pydantic's `extra="forbid"`. The nights mismatch is computed in the handler and flagged,
+never rejected — see D-005; that rule doesn't belong in the schema because rejecting on it would
+turn a five-second human check into a lost lead.
 
 ## Repo layout
 
 ```
-api/
-  inquiry.py               POST handler
-  outbox_drain.py          cron worker                      [Phase 2]
-  triage.py                Claude classification            [Phase 3]
-  _lib/
-    models.py              Pydantic — InquiryIn, enums
-    db.py                  psycopg pool, queries, ref-code generator
-    notify.py              Resend + Sheets adapters (Protocol-based)
-    security.py            honeypot, timing, rate limit
-    logging.py             structured JSON logs
+app/
+  api/
+    inquiry/route.ts        POST handler
+    cron/
+      outbox-drain/route.ts cron worker                      [Phase 2]
+      triage/route.ts       Claude classification            [Phase 3]
+  contact/page.tsx          mounts <InquiryForm />
+lib/
+  inquiry/
+    schema.ts                Zod — inquirySchema, InquiryIn, enums
+    db.ts                    postgres.js pool, queries, ref-code generator
+    notify.ts                Resend + Sheets adapters
+    security.ts              honeypot, timing, rate limit
+  db.ts                      shared Supabase transaction-pooler client (ported from portfolio)
 migrations/
   001_inquiries.sql
   002_outbox.sql                                            [Phase 2]
+components/
+  InquiryForm/
+    InquiryForm.tsx
+    useInquiryForm.ts        state machine + client validation
+    InquiryForm.module.css   or Tailwind utility classes — TBD in Stage 6
 tests/
-  conftest.py              fixtures, inquiry factory
-  test_models.py           validation rules — written first
-  test_inquiry_api.py      handler: 201, 422, 429, spam
-  test_outbox.py           claim / retry / dead-letter      [Phase 2]
-src/components/InquiryForm/
-  InquiryForm.jsx
-  useInquiryForm.js        state machine + client validation
-  fields.js                field schema — drives render AND validation
-  InquiryForm.scss
-requirements.txt
-pytest.ini
+  inquiry-schema.test.ts    validation rules — written first
+  inquiry-route.test.ts     handler: 201, 422, 429, spam
+  outbox.test.ts            claim / retry / dead-letter      [Phase 2]
 ```
 
-`fields.js` as a single data-driven source means adding a field is one object literal, not edits
-in four places.
+`inquirySchema` as the single data-driven source means adding a field is one line in one file,
+imported by both sides of the wire — not edits in four places across two languages.
 
 ## Frontend
 
-`Contact.jsx` renders `<InquiryForm />`. State machine: `idle → submitting → success | error`.
+`app/contact/page.tsx` renders `<InquiryForm />`. State machine: `idle → submitting → success |
+error`.
 
 - Native input types (`date`, `tel`, `email`, `number`) so mobile gets the right keyboard.
-- Real `<label htmlFor>` on every field. The existing codebase uses `<li onClick>` for
-  navigation with no keyboard support — the form does **not** inherit that pattern.
-- Client validation mirrors server rules for fast feedback; the server stays authoritative.
+- Real `<label htmlFor>` on every field. The pre-rebuild codebase used `<li onClick>` for
+  navigation with no keyboard support — the form does **not** inherit that pattern, and neither
+  does the rebuilt nav (see the frontend rebuild plan, Stage 3).
+- Client validation runs the same `inquirySchema` as the server via `.safeParse()` for fast
+  feedback; the server call is still authoritative.
 - On success, replace the form with the reference code and an expected-reply-time message.
 - On field errors, focus the first invalid input and announce via `aria-live`.
 - Read `?destination=` on mount to prefill.
 
 ## CI/CD
 
-**On PR** — `ruff` + `mypy`, `pytest --cov` with a coverage floor, `eslint`, `vite build`,
+**On PR** — `eslint`, `tsc --noEmit`, `vitest --coverage` with a coverage floor, `next build`,
 deploy to Vercel preview, smoke `POST` against the preview asserting `201` and a valid reference
 code.
 
@@ -259,5 +293,5 @@ smoke test, roll back on failure.
 
 **Nightly** — Promptfoo eval suite (Phase 3 onward).
 
-**Secrets** — `DATABASE_URL`, `RESEND_API_KEY`, `NOTIFY_TO`, `ANTHROPIC_API_KEY`,
-`IP_HASH_SALT`.
+**Secrets** — `SUPABASE_DB_URL` (or the discrete `SUPABASE_DB_*` vars, matching the portfolio's
+`lib/db.ts` pattern), `RESEND_API_KEY`, `NOTIFY_TO`, `ANTHROPIC_API_KEY`, `IP_HASH_SALT`.

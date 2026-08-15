@@ -17,16 +17,32 @@ later phase is required for an earlier one to deliver value.
 | Phase | Outcome | Blocking? |
 |---|---|---|
 | **0 · Blockers** | Contact page is reachable in production; site is usable on mobile | **Yes** — form cannot ship without it |
+| **0.5 · Frontend rebuild** | Vite SPA replaced with Next.js 16 / TypeScript / Tailwind v4, matching the maintainer's portfolio stack (D-008); design system, accessibility remediation, CMS-free content admin | **Yes** — inserted 2026-08-15, blocks Phase 1's form UI (see below) |
 | **1 · MVP form** | Working lead capture with a queryable system of record | — |
 | **2 · Hardening** | No lead can be lost to a third-party outage; spam controlled | — |
 | **3 · Triage** | Leads auto-segmented and scored; drafts prepared for the agent | Optional |
 | **4 · Ops surface** | Staff can browse and work leads outside email | Optional |
 
-The Phase 0 routing blocker is **resolved**. P0-1 and P0-2 shipped in PR #2 (`dd5a0ad`);
-verified against the live site on 2026-07-22, `https://www.creativejourneysph.com/contact`
-returns **`200`**, as do all other routes. `/api/inquiry` returns `404`, confirming the path is
-clear for Phase 1's function. Remaining Phase 0 work is P0-3 through P0-9 — none of it blocks
-Phase 1.
+**Phase 0 is fully done, not partially.** P0-1 and P0-2 (the routing blocker) shipped in PR #2
+(`dd5a0ad`); verified against the live site on 2026-07-22, every route returned `200` and
+`/api/inquiry` returned `404`, confirming the path was clear for Phase 1's function. **P0-3
+through P0-9 also shipped**, in PR #5 (`ada0159`, 2026-07-24) — image compression, dead-code
+removal, SEO metadata, robots/sitemap, the privacy page, and footer copy fixes are all live.
+This page previously said P0-3–P0-9 were still outstanding; that was stale.
+
+**Phase 0.5 exists because of a decision made after Phase 0 closed.** The frontend is being
+rebuilt from a Vite SPA onto Next.js 16, to match the maintainer's other active project and to
+give CMS-driven destination pages real per-route HTML (a client-rendered SPA ships an empty
+`#root`, which cannot hold per-route metadata). See `decisions.md` D-008. Its own plan lives in
+the separate rebuild plan document (not yet mirrored into this `docs/` tree), staged
+Stage 0 → Stage 7. It reverses D-001: the Python inquiry backend becomes a TypeScript Route
+Handler, and the database moves from the planned Neon to Supabase (D-009).
+
+**What this changes about Phase 1:** P1-1 through P1-8 (schema, migration, `db.py`/`security.py`
+equivalents) are being rewritten in TypeScript rather than resumed in Python — see D-001's
+amendment in `decisions.md`. P1-9 through P1-12 (the form UI, `Contact.jsx` wiring, destination
+card links) were already going to wait on frontend work; they now wait on Phase 0.5 instead of
+a smaller in-place Contact page redesign.
 
 ## Documents
 

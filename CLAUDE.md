@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Marketing site for Creative Journeys Travel PH, a Philippines-based wholesaler travel agency (FIT / GIT / MICE). Static React SPA — no backend, no API, no database, no tests. Deployed on Vercel.
 
-**Active work: adding an inquiry form to `/contact`.** The plan of record is in `docs/` — start with `docs/README.md`. `docs/architecture.md` has the stack and data model, `docs/decisions.md` records why each choice was made and what would reverse it, and `docs/phase-0-blockers.md` through `phase-4-ops.md` hold the staged task breakdown. Phase 0's routing blocker is **resolved** — P0-1 and P0-2 shipped in PR #2 (`dd5a0ad`), so `/contact` is reachable in production and Phase 1 can be tested end-to-end. Remaining Phase 0 work is P0-3 through P0-9.
+**Active work: rebuilding the frontend on Next.js 16 / TypeScript (branch `rebuild/nextjs`), then resuming the inquiry form.** Phase 0 is fully done — P0-1/P0-2 (routing) shipped in PR #2 (`dd5a0ad`), P0-3 through P0-9 (images, SEO, privacy page, dead code) shipped in PR #5 (`ada0159`). Phase 0.5, inserted 2026-08-15, replaces the Vite SPA below with Next.js/TypeScript/Tailwind v4 to match the maintainer's portfolio stack and reverses `docs/decisions.md` D-001 — the inquiry backend becomes a TypeScript Route Handler on Supabase instead of a Python function on Neon. See `docs/decisions.md` D-008–D-010 and `docs/README.md`. Everything below this point describes the **pre-rebuild Vite SPA**, which still exists on `main` and is being deleted in the rebuild's Stage 7.
 
 ## Commands
 
