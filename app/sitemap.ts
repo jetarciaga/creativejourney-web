@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { listDestinations } from "@/lib/destinations";
 import { absoluteUrl } from "@/lib/site";
 import { routeMetadata } from "@/lib/seo";
 
@@ -6,7 +7,7 @@ import { routeMetadata } from "@/lib/seo";
 // checks against (lib/seo.ts), so it cannot drift the way the hand
 // maintained public/sitemap.xml did — that file only ever listed 3 of the
 // site's routes (P0-6).
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const priorities: Record<string, number> = {
     "/": 1.0,
     "/contact": 0.9,
@@ -15,10 +16,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/partners": 0.7,
   };
 
-  return Object.keys(routeMetadata).map((path) => ({
+  const staticEntries = Object.keys(routeMetadata).map((path) => ({
     url: absoluteUrl(path),
     lastModified: new Date(),
-    changeFrequency: "monthly",
+    changeFrequency: "monthly" as const,
     priority: priorities[path] ?? 0.6,
   }));
+
+  const destinations = await listDestinations();
+  return [
+    ...staticEntries,
+    ...destinations.map((destination) => ({
+      url: absoluteUrl("/destinations/" + destination.slug),
+      lastModified: new Date(destination.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: destination.featured ? 0.8 : 0.6,
+    })),
+  ];
 }

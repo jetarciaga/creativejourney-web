@@ -3,21 +3,30 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import Card from "@/components/Card";
 import Icon from "@/components/Icon";
-import type { destinations } from "@/lib/content";
-
-type Destination = (typeof destinations)[number];
+import type { Destination } from "@/lib/destination-model";
 
 export default function DestinationCard({ destination }: { destination: Destination }) {
   return (
     <Card className="group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-site-strong">
       <div className="relative aspect-[4/3] overflow-hidden">
-        <Image
-          src={destination.image}
-          alt={destination.alt}
-          fill
-          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover transition duration-500 group-hover:scale-105"
-        />
+        {destination.heroImage.startsWith("/") ? (
+          <Image
+            src={destination.heroImage}
+            alt={destination.heroImageAlt}
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          // Admin-managed external images are allowed without making the
+          // image configuration accept every possible remote hostname.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={destination.heroImage}
+            alt={destination.heroImageAlt}
+            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        )}
       </div>
       <div className="p-5 sm:p-6">
         <p className="font-sans text-xs font-semibold uppercase tracking-[0.12em] text-accent">{destination.region}</p>

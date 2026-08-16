@@ -1,8 +1,3 @@
-import type { StaticImageData } from "next/image";
-import boracayImage from "@/src/assets/images/boracayBeach.webp";
-import boholImage from "@/src/assets/images/hinagdanan-cave.webp";
-import cebuImage from "@/src/assets/images/cebuWhaleShark.webp";
-
 export const services = [
   {
     id: "fit",
@@ -35,37 +30,3 @@ export const services = [
 
 export type Service = (typeof services)[number];
 export type ServiceId = Service["id"];
-
-export const destinations: Array<{
-  slug: string;
-  name: string;
-  region: string;
-  summary: string;
-  image: StaticImageData;
-  alt: string;
-}> = [
-  {
-    slug: "cebu",
-    name: "Cebu",
-    region: "Central Visayas",
-    summary: "Island energy, heritage, and ocean adventures in one flexible program.",
-    image: cebuImage,
-    alt: "A whale shark swimming beneath a snorkeller in clear blue water",
-  },
-  {
-    slug: "bohol",
-    name: "Bohol",
-    region: "Central Visayas",
-    summary: "Caves, coastlines, countryside, and easy-going group experiences.",
-    image: boholImage,
-    alt: "Visitors exploring the clear underground pool inside Hinagdanan Cave",
-  },
-  {
-    slug: "boracay",
-    name: "Boracay",
-    region: "Western Visayas",
-    summary: "A polished island escape built around beaches, water, and downtime.",
-    image: boracayImage,
-    alt: "Aerial view of palm trees and a bright white beach beside turquoise water",
-  },
-];
