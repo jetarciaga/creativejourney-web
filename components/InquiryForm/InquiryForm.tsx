@@ -137,10 +137,10 @@ export default function InquiryForm({ destinations }: { destinations: InquiryDes
 
           <div>
             <label className={labelClasses} htmlFor="inquiry-destination">Destination of interest</label>
-            <select id="inquiry-destination" name="destination" value={values.destination} onChange={update("destination")} className={inputClasses} {...fieldProps("destination", errors)}>
-              <option value="">Any destination / not sure yet</option>
-              {destinations.map((destination) => <option key={destination.slug} value={destination.slug}>{destination.name}</option>)}
-            </select>
+            <input id="inquiry-destination" name="destination" type="text" list="inquiry-destination-options" value={values.destination} onChange={update("destination")} className={inputClasses} {...fieldProps("destination", errors)} />
+            <datalist id="inquiry-destination-options">
+              {destinations.map((destination) => <option key={destination.slug} value={destination.name} />)}
+            </datalist>
             <FieldError field="destination" errors={errors} />
           </div>
           <div>
