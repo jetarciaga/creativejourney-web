@@ -58,8 +58,43 @@ describe("InquiryForm", () => {
     expect(screen.getByLabelText(/number of pax/i)).toHaveAttribute("type", "number");
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/destination/i)).toHaveValue("cebu");
+      expect(screen.getByLabelText(/destination/i)).toHaveValue("Cebu");
     });
+  });
+
+  it("accepts a free-text destination and exposes known destinations as datalist options", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ reference_code: "CJ-2026-0002" }), { status: 201 }),
+    );
+    window.history.replaceState({}, "", "/contact");
+    render(
+      <InquiryForm
+        destinations={[
+          { slug: "cebu", name: "Cebu" },
+          { slug: "bohol", name: "Bohol" },
+        ]}
+      />,
+    );
+
+    const destination = screen.getByLabelText(/destination/i);
+    expect(destination).toHaveAttribute("type", "text");
+    expect(destination).toHaveAttribute("list", "inquiry-destination-options");
+    expect(Array.from(document.querySelectorAll<HTMLOptionElement>("#inquiry-destination-options option")).map((option) => option.value)).toEqual([
+      "Cebu",
+      "Bohol",
+    ]);
+
+    fireEvent.change(destination, { target: { value: "Palawan" } });
+    expect(destination).toHaveValue("Palawan");
+    fillRequiredFields();
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 5001);
+    fireEvent.submit(screen.getByRole("button", { name: /send inquiry/i }).closest("form")!);
+
+    await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled());
+    const call = vi.mocked(fetch).mock.calls[0];
+    if (!call) throw new Error("fetch was not called");
+    const [, requestInit] = call;
+    expect(JSON.parse(String(requestInit?.body))).toMatchObject({ destination: "Palawan" });
   });
 
   it("replaces the form with the reference code on success", async () => {

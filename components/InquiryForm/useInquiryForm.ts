@@ -101,7 +101,7 @@ export function useInquiryForm(destinations: InquiryDestinationOption[]) {
     );
     if (matched) {
       const frame = window.requestAnimationFrame(() => {
-        setValues((current) => ({ ...current, destination: matched.slug }));
+        setValues((current) => ({ ...current, destination: matched.name }));
       });
       return () => window.cancelAnimationFrame(frame);
     }
