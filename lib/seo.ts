@@ -78,6 +78,11 @@ export const routeMetadata: Record<string, RouteMeta> = {
     `Services — FIT, GIT & MICE — ${TITLE_SUFFIX}`,
     "Free Independent Traveler, Group Incentive Travel, and Meetings, Incentives, Conferences & Events programs, built to fit your group.",
   ),
+  "/destinations": buildRouteMeta(
+    "/destinations",
+    "Destinations — " + TITLE_SUFFIX,
+    "Explore Cebu, Bohol, Boracay, and the destinations Creative Journeys can shape into a thoughtful travel program.",
+  ),
   "/services/fit": buildRouteMeta(
     "/services/fit",
     `FIT — Free Independent Traveler Packages — ${TITLE_SUFFIX}`,

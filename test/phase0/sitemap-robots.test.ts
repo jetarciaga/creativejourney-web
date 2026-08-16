@@ -4,15 +4,26 @@
 // MetadataRoute.Robots) with no Next-runtime dependency, so they're
 // importable directly here — generated from the same route list every
 // other Phase 0 test checks against, so it can't drift again.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/destinations", () => ({
+  listDestinations: vi.fn().mockResolvedValue([
+    {
+      id: "11111111-1111-4111-8111-111111111111",
+      slug: "cebu",
+      updatedAt: "2026-08-15T00:00:00.000Z",
+      featured: true,
+    },
+  ]),
+}));
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 
-const EXPECTED_ROUTES = ["/", "/about", "/contact", "/privacy", "/services", "/partners"];
+const EXPECTED_ROUTES = ["/", "/about", "/contact", "/privacy", "/services", "/partners", "/destinations"];
 
 describe("Phase 0 sitemap + robots (P0-6)", () => {
-  it("lists every known route in the sitemap", () => {
-    const entries = sitemap();
+  it("lists every known route in the sitemap", async () => {
+    const entries = await sitemap();
     const paths = entries.map((entry) => new URL(entry.url).pathname);
     for (const route of EXPECTED_ROUTES) {
       expect(paths, `sitemap missing ${route}`).toContain(route);

@@ -21,7 +21,7 @@ describe("Phase 0 SEO metadata (P0-5)", () => {
     expect(absoluteUrl("/about")).toMatch(/^https:\/\/.+\/about$/);
   });
 
-  it.each(["/", "/about", "/contact", "/privacy", "/services", "/partners"])(
+  it.each(["/", "/about", "/contact", "/privacy", "/services", "/partners", "/destinations"])(
     "gives %s a title, a description, and Open Graph + Twitter cards",
     (route) => {
       const meta = routeMetadata[route];

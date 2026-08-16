@@ -7,7 +7,8 @@ import QuoteBand from "@/components/QuoteBand";
 import Section from "@/components/Section";
 import ServiceCard from "@/components/ServiceCard";
 import TrustBar from "@/components/TrustBar";
-import { destinations, services } from "@/lib/content";
+import { services } from "@/lib/content";
+import { listDestinations } from "@/lib/destinations";
 import { metadataForRoute } from "@/lib/seo";
 import { absoluteUrl, SITE } from "@/lib/site";
 
@@ -15,7 +16,10 @@ export function generateMetadata(): Metadata {
   return metadataForRoute("/");
 }
 
-export default function Page() {
+export const revalidate = 300;
+
+export default async function Page() {
+  const destinations = await listDestinations();
   return (
     <>
       <JsonLd

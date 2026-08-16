@@ -19,6 +19,8 @@ const EXPECTED_PAGES = [
   "services/git/page.tsx",
   "services/mice/page.tsx",
   "partners/page.tsx",
+  "destinations/page.tsx",
+  "destinations/[slug]/page.tsx",
   "not-found.tsx",
 ];
 
