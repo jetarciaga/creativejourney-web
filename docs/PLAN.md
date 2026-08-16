@@ -310,7 +310,7 @@ Built on `feature/supabase-admin` (off `main`, uncommitted as instructed). Verif
 
 **Not committed yet** — next step is committing and deciding whether to PR now or continue straight into Stage 6.
 
-### Stage 6 — Inquiry form — NOT STARTED
+### Stage 6 — Inquiry form — DONE, verified 2026-08-16
 
 This is the original Phase 1 (Appendix C), re-planned for the new stack.
 
@@ -320,6 +320,10 @@ This is the original Phase 1 (Appendix C), re-planned for the new stack.
 - Form UI with real `<label htmlFor>` on every field, native input types for mobile keyboards, `idle → submitting → success | error` state machine, server errors mapped back to their inputs with focus moved to the first invalid one and announced via `aria-live`, and `?destination=` read on mount.
 
 **Acceptance:** the original pytest suite's assertions all have Vitest equivalents that pass; a real submission round-trips to a Supabase row in under 2s.
+
+Implemented on `feature/inquiry-form`. Added the shared strict Zod schema, server-only Route Handler, hashed-IP guard and rate limit, transactional inquiry/outbox persistence, RLS lockdown, Resend best-effort delivery, and the accessible `/contact` form. Migrations `004_outbox.sql` and `005_inquiry-rls.sql` are applied to Supabase. Build, lint, typecheck, and 134 Vitest tests pass; `verify:rls` passes. Local and Vercel preview submissions were persisted with `CJ-{year}-{sequence}` references and both outbox sinks delivered successfully (`CJ-2026-0006` was the final preview check). Stage 7 cleanup and Stage 8+ work remain untouched.
+
+**Independently verified, not just taken from the summary.** Read every new file (`lib/inquiry/{schema,security,db,notify,records}.ts`, `app/api/inquiry/route.ts`, both migrations, `InquiryForm.tsx`/`useInquiryForm.ts`) and confirmed: `create_inquiry_with_outbox` is a `SECURITY DEFINER` RPC with `revoke all ... from public, anon, authenticated` / `grant execute ... to service_role` only — stricter than the "one transaction" the spec asked for, since even the service-role client can't do raw writes, only call this one function. `nights_mismatch` is flagged (`input.nights !== nightsComputed`), never rejected — matches D-005 exactly, and has its own test (`inquiry-records.test.ts`). `inquiry-route.test.ts` directly asserts the single most important behavioral guarantee — `"still returns 201 when immediate Resend draining fails"` — with Resend mocked to reject. Honeypot timing is computed from real `useState` mount time, not trusted from a fake DOM field, so it can't be spoofed client-side (server-side trust of the client-sent `elapsedMs` on direct API calls is a known, deliberate limitation matching the original architecture doc's "don't add friction preemptively" stance, not a gap introduced here). Also independently queried Supabase directly (not just trusting the log): `CJ-2026-0006` exists with `contact_name: "Vercel Stage Six Final Test"`, `email: delivered@resend.dev` (Resend's own test address), and both outbox rows show `delivered_at` populated, `attempts: 1`, `last_error: null`. Nothing to fix.
 
 ### Stage 7 — Cleanup — NOT STARTED
 
