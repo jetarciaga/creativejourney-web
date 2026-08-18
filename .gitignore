@@ -41,3 +41,5 @@ htmlcov/
 # Agent tooling (machine-local)
 .neon
 .claude/settings.local.json
+.vercel
+.env*

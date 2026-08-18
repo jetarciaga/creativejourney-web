@@ -636,9 +636,9 @@ against that:
 
 | Service | Free-tier risk |
 |---|---|
-| Vercel (hosting) | Hobby's terms restrict it to personal/non-commercial use — a live conflict, not a future one, since this commercial site is already deployed there. Open item, not yet resolved — see below. |
+| Vercel (hosting) | Hobby's terms restrict it to personal/non-commercial use — a live conflict, not a future one, since this commercial site is already deployed there. **Resolved:** accepted as-is, revisit only if Vercel actually flags it — see below. |
 | Vercel Cron | Free on Hobby, capped at once-per-day invocations — conflicts with the outbox-drain cron's original `*/1` (every-minute) design in the architecture reference (Appendix B). The nightly triage cron would have been fine as daily, but is moot now that triage itself is dropped. |
-| Supabase | Free projects auto-pause after a period of inactivity, needing a manual resume — a real risk for a low-traffic site, not yet mitigated. |
+| Supabase | Free projects auto-pause after a period of inactivity, needing a manual resume — a real risk for a low-traffic site. **Resolved:** a daily keep-alive cron mitigates this — see below. |
 | Resend | ~3,000 emails/month free, ~2 emails/inquiry from Stage 6 → roughly 1,500 inquiries/month ceiling. Not a realistic risk at this business's volume. |
 | Google OAuth | No paid tier exists for this at all. No risk. |
 | Anthropic API (Phase 3 triage) | No free tier. D-007's own reasoning ("cost rounds to near zero") already conceded a nonzero cost — direct conflict with a literal free-tier-only rule. |
@@ -657,13 +657,18 @@ commercial-use risk as-is rather than upgrade or hold: stay on the free Hobby pl
 only if Vercel actually flags the project, not preemptively. Revisit if that happens — until
 then this is settled, not open.
 
-**Resolved 2026-08-18 — Supabase auto-pause mitigated.** Built on `chore/supabase-keep-alive`
-(verified, not yet merged): `vercel.json`'s single daily cron (`0 0 * * *`, respecting the
-Hobby cap) hits `app/api/cron/keep-alive/route.ts`, which checks a `CRON_SECRET` bearer token
-before doing a cheap public-client read against `destinations` — enough real API activity to
-keep the free-tier project from auto-pausing, with no elevated privilege (uses the public
-client, not the service-role one) and no risk of public abuse (rejects when the secret is
-missing or wrong, not just when it's present-but-different).
+**Resolved 2026-08-18 — Supabase auto-pause mitigated, merged to `main` via PR #15.**
+`vercel.json`'s single daily cron (`0 0 * * *`, respecting the Hobby cap) hits
+`app/api/cron/keep-alive/route.ts`, which checks a `CRON_SECRET` bearer token before doing a
+cheap public-client read against `destinations` — enough real API activity to keep the
+free-tier project from auto-pausing, with no elevated privilege (uses the public client, not
+the service-role one) and no risk of public abuse (rejects when the secret is missing or
+wrong, not just when it's present-but-different). **`CRON_SECRET` confirmed present in
+Vercel's Production environment** via `npx vercel env ls production` after linking the local
+directory (`npx vercel link --yes`) — the local project hadn't been linked before, which had
+been silently breaking every earlier `vercel env ls` check in this session (piped through a
+`grep` that swallowed the "not linked" error instead of surfacing it, producing a false "not
+found" a few turns earlier — corrected here, not left standing).
 
 **Still open, not yet decided:**
 - **The outbox-drain cron's frequency**, if Phase 2 hardening is ever built — needs a design
