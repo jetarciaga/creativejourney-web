@@ -7,9 +7,6 @@ import QuoteBand from "@/components/QuoteBand";
 import Section from "@/components/Section";
 import { metadataForRoute } from "@/lib/seo";
 import { FOUNDED_YEAR, yearsInBusiness } from "@/lib/site";
-import teamImage from "@/src/assets/images/team.webp";
-import underwaterImage from "@/src/assets/images/underwater.webp";
-import tarsierImage from "@/src/assets/images/tarsier.webp";
 
 export function generateMetadata(): Metadata {
   return metadataForRoute("/about");
@@ -29,7 +26,7 @@ export default function Page() {
       <section className="py-14 sm:py-20 lg:py-24">
         <Container className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16">
           <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-surface shadow-site">
-            <Image src={teamImage} alt="The Creative Journeys team in the Philippines" fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" priority />
+            <Image src="/about/team.webp" alt="The Creative Journeys team in the Philippines" fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" priority />
           </div>
           <div className="max-w-2xl">
             <p className="eyebrow">Built on experience</p>
@@ -44,11 +41,11 @@ export default function Page() {
       <Section eyebrow="What guides us" title="A useful combination of care and capability." description="We want every partner and traveller to feel that the program has been thought through—not simply passed along.">
         <div className="grid gap-6 md:grid-cols-2">
           <article className="grid overflow-hidden rounded-card border border-border bg-surface md:grid-cols-[0.9fr_1.1fr]">
-            <div className="relative min-h-64"><Image src={underwaterImage} alt="A swimmer exploring clear Philippine water" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" /></div>
+            <div className="relative min-h-64"><Image src="/about/underwater.webp" alt="A swimmer exploring clear Philippine water" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" /></div>
             <div className="p-6 sm:p-8"><p className="font-sans text-xs font-bold uppercase tracking-[0.14em] text-accent">Our mission</p><h3 className="mt-4 font-display text-2xl font-semibold text-text">Make thoughtful travel easier to deliver.</h3><p className="mt-4 text-sm leading-relaxed text-muted">We transform travel goals into practical, personal programs through expertise, responsiveness, and close attention to the details that shape the experience.</p></div>
           </article>
           <article className="grid overflow-hidden rounded-card border border-border bg-surface md:grid-cols-[0.9fr_1.1fr]">
-            <div className="relative min-h-64"><Image src={tarsierImage} alt="A Philippine tarsier resting on a branch" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" /></div>
+            <div className="relative min-h-64"><Image src="/about/tarsier.webp" alt="A Philippine tarsier resting on a branch" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" /></div>
             <div className="p-6 sm:p-8"><p className="font-sans text-xs font-bold uppercase tracking-[0.14em] text-accent">Our vision</p><h3 className="mt-4 font-display text-2xl font-semibold text-text">Be the partner people trust with the complicated parts.</h3><p className="mt-4 text-sm leading-relaxed text-muted">We are building a destination-management partner known for clear communication, inventive solutions, and service that stays steady under pressure.</p></div>
           </article>
         </div>
