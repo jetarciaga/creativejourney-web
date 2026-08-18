@@ -8,9 +8,21 @@
 > is still useful — the full decision log, the data model, the validation rules, forward-looking
 > Phase 2–4 scope — is folded in as appendices at the end, not deleted.
 
-## Status (2026-08-16)
+## Status (2026-08-18)
 
-**Merged and live, through Stage 5.** PR #9 (Stages 0–4.6, the Next.js rebuild + brand pass + `vercel.json` fix) merged into `main` at `eb8fb90`. PR #10 (Stage 5, Supabase + Google-OAuth admin) merged at `d67e560` (`gh pr view 10`: `state: MERGED`, `mergedAt: 2026-08-16T02:16:52Z`) — squash merge, so `feature/supabase-admin`'s three commits don't show as git-ancestors of `main`, but the content is fully incorporated. Vercel's production deploy needed the 12 new Stage 5 env vars added to the dashboard before it would build (first attempt failed on both Preview and Production with `Missing required public environment variable: NEXT_PUBLIC_SUPABASE_URL` — expected, since `.env.local` is gitignored and Vercel only sees what's configured in its own project settings). After adding them and redeploying, verified live: `www.creativejourneysph.com/`, `/destinations`, `/destinations/cebu`, `/admin/sign-in`, `/sitemap.xml` all return real rendered content (not just 200s — checked actual page text and that the sitemap lists all three DB-backed destination URLs). `feature/supabase-admin` is stale post-merge, safe to delete. Stage 6 (inquiry form) and beyond have not started.
+**Merged and live, through Stage 7 plus the destination and hydration follow-up fixes.** PR #9 (Stages 0–4.6) merged at `eb8fb90`. PR #10 (Stage 5) merged at `d67e560`. PR #11 (Stage 6, inquiry form) merged at `23b8416`. PR #12 (free-text destination fix) merged at `863506c`. **PR #13 (header logo hydration fix) merged at `39bc942`, commit `dae6e7a`. PR #14 (Stage 7 cleanup) merged at `0ba4ca7`, commit `dcfe9aa`.** All confirmed directly via `gh pr view` against the correct repo (`jetarciaga/creativejourney-web` — a Codex report momentarily typo'd the URL as `creativejourneysph.com`, caught and corrected before it mattered).
+
+**Housekeeping note:** PR #14's merge commit reads `"Merge pull request #14 from jetarciaga/fix/header-logo-hydration"` — the Stage 7 cleanup commit (`dcfe9aa`) was made on top of the same branch as the hydration fix (`fix/header-logo-hydration`) rather than a fresh branch off `main`, despite the instruction to create `chore/stage7-cleanup`. Not a functional problem — both changes are present and correct on `main` in the right order — just a git-hygiene deviation worth knowing about if the history ever needs archaeology. `remotes/origin/feature/inquiry-form` is also still un-deleted from Stage 6, same low-priority cleanup item as before.
+
+**Both fixes independently verified against production, not just the reports:**
+- **Hydration fix** — read `lib/use-mounted.ts` (the extracted `useSyncExternalStore` hook, matching `ThemeToggle.tsx`'s existing pattern exactly) and confirmed `ThemeToggle.tsx` itself was refactored to use it too, not just `Header.tsx`. `test/phase7/header-hydration.test.tsx` asserts the actual contract via `renderToString` — the server snapshot renders the light logo even when the mocked theme state is `"dark"`, which is precisely what prevents the mismatch. Reran the full suite independently: build/lint/`tsc --noEmit` clean, 137/137 tests. Then loaded `https://www.creativejourneysph.com/about` in a real browser **with console tracking active from before page load** (the first check, tracking-after-navigate, would have missed a load-time warning — redid it properly) — zero React/hydration messages, only unrelated browser-extension noise.
+- **Stage 7** — confirmed `src/`, `api/_lib/*.py`, `tests/*.py`, `vite.config.js`, `index.html`, `pytest.ini`, `requirements.txt`, `docker-compose.yml` are all gone from `main`. Production `/about` renders the team/mission/vision photos correctly from `public/about/`.
+
+`feature/supabase-admin`, `feature/inquiry-form`, and the `fix/header-logo-hydration`/Stage-7 branch are all stale post-merge.
+
+**Outstanding, not part of Stage 6 itself:** the free-text destination follow-up (letting the inquiry form accept a destination not in the `destinations` table, via a datalist instead of a closed `<select>`) was drafted as a Codex prompt but never landed — confirmed directly by reading `InquiryForm.tsx` on `main`, which still has the original `<select>`. The merge happened before that prompt was run, or it was run but not committed before merging. Low priority, frontend-only, no schema/backend change needed (`destination` is already free text at both the Zod and DB level) — pick it up whenever, doesn't block anything.
+
+Stage 7 (delete legacy Vite `src/`) and Stage 8+ (Phase 2/3/4, not yet re-planned for TypeScript) have not started.
 
 Everything below this line is the history of how the rebuild got here, kept for context — not a status report. Stages 0–4.5 were applied on branch `rebuild/nextjs` (uncommitted, `main` untouched, nothing pushed), installed (`npm install` has run — `node_modules` and `package-lock.json` both present and consistent with `package.json`), and built and run (`.next/` exists from both a build and a dev server session). An independent review confirmed the app is real: logo-derived tokens in `app/globals.css`, the source-derived header/footer logo assets, Playfair Display + Manrope, the pin/C app icons, the existing component shell, `lib/content.ts` for services and destinations, `lib/seo.ts` for per-route metadata, and pages for `/`, `/about`, `/contact` (no form yet — that's Stage 6), `/privacy`, `/services` (+ `fit`/`git`/`mice`), `/partners`, `not-found`.
 
@@ -325,13 +337,48 @@ Implemented on `feature/inquiry-form`. Added the shared strict Zod schema, serve
 
 **Independently verified, not just taken from the summary.** Read every new file (`lib/inquiry/{schema,security,db,notify,records}.ts`, `app/api/inquiry/route.ts`, both migrations, `InquiryForm.tsx`/`useInquiryForm.ts`) and confirmed: `create_inquiry_with_outbox` is a `SECURITY DEFINER` RPC with `revoke all ... from public, anon, authenticated` / `grant execute ... to service_role` only — stricter than the "one transaction" the spec asked for, since even the service-role client can't do raw writes, only call this one function. `nights_mismatch` is flagged (`input.nights !== nightsComputed`), never rejected — matches D-005 exactly, and has its own test (`inquiry-records.test.ts`). `inquiry-route.test.ts` directly asserts the single most important behavioral guarantee — `"still returns 201 when immediate Resend draining fails"` — with Resend mocked to reject. Honeypot timing is computed from real `useState` mount time, not trusted from a fake DOM field, so it can't be spoofed client-side (server-side trust of the client-sent `elapsedMs` on direct API calls is a known, deliberate limitation matching the original architecture doc's "don't add friction preemptively" stance, not a gap introduced here). Also independently queried Supabase directly (not just trusting the log): `CJ-2026-0006` exists with `contact_name: "Vercel Stage Six Final Test"`, `email: delivered@resend.dev` (Resend's own test address), and both outbox rows show `delivered_at` populated, `attempts: 1`, `last_error: null`. Nothing to fix.
 
-### Stage 7 — Cleanup — NOT STARTED
+**Follow-up, requested 2026-08-16 after the three commits landed:** the destination field was a `<select>` limited to the known `destinations` table entries, with no way to name somewhere not yet in that list. Confirmed this is a frontend-only restriction — `lib/inquiry/schema.ts`'s `destination` field is already free text (`optionalText(120)`, no enum) and `migrations/001_inquiries.sql`'s `destination` column has no `CHECK` constraint or foreign key, so no backend/schema change is needed. Fix: swap the `<select>` for a text `<input>` with a `<datalist>` of the known destination names as autocomplete suggestions — one field, free text always allowed, no toggle/reveal state to manage. `useInquiryForm.ts`'s `?destination=` prefill effect needs to set the matched destination's `name` instead of its `slug`, since the field now displays human-readable text rather than holding a slug value.
 
-Delete the Vite app (`src/`, `vite.config.js`, `index.html`, all 11 SCSS files), and the never-built Python scaffolding that still exists on disk (`api/_lib/*.py`, `tests/*.py`, `pytest.ini`, `requirements.txt`, `docker-compose.yml`), `src/assets/react.svg`, and the `normalize.css` / `react-boxicons` dependencies. **Before this can run**, every image import from `@/src/assets/` (in `lib/content.ts` and `HeroCarousel.tsx`) needs a real home outside `src/`, or this stage breaks every image on the site. Replace the untouched Vite-template `README.md`. Rewrite `CLAUDE.md` — its Architecture, Styling, and Routing sections describe a Vite SPA that no longer exists, and `vercel.json`'s SPA rewrite is already gone as of Stage 4.6.
+### Stage 7 — Cleanup — DONE, verified 2026-08-18
+
+Re-verified the scope directly against the current tree rather than relying on the original outline, which was written before Stages 5/6 existed. `lib/content.ts` no longer imports from `src/assets/` at all — Stage 5 already fixed that when destination images moved to `public/destinations/`. What's actually still blocking:
+
+**Image migration — do this first, or the delete step breaks the site:**
+- `app/about/page.tsx` imports `team.webp`, `underwater.webp`, `tarsier.webp` from `@/src/assets/images/`
+- `components/HeroCarousel.tsx` imports `carousel_01/02/03.webp` from `@/src/assets/`
+
+Both usages already render with `next/image`'s `fill` mode inside a sized container (`aspect-[4/3]`, `min-h-64`, etc.) — fill mode sizes to the parent, not to intrinsic image dimensions, and neither usage sets `placeholder="blur"`. That means switching from a static import (`import teamImage from "..."`, gives a `StaticImageData` object) to a plain `public/` path string (`src="/about/team.webp"`) is a straight swap with **no width/height regression to account for** — lower risk than it might look. `HeroCarousel.tsx`'s `slides` array type changes from `Array<{ image: StaticImageData; alt: string }>` to `Array<{ image: string; alt: string }>`, the now-unused `StaticImageData` import is dropped, and `key={slide.image.src}` becomes `key={slide.image}`.
+
+Destination convention, matching Stage 5's `public/destinations/` pattern: move the 3 About images to `public/about/`, the 3 carousel images to `public/hero/`.
+
+**Then delete:**
+- `src/` in full (42 files — the entire pre-rebuild Vite app: `App.jsx`, `assets/`, `components/*.jsx+scss`, `layouts/`, `pages/*.jsx+scss`, `main.jsx`)
+- `vite.config.js`, `index.html`
+- `api/_lib/*.py` + `api/_lib/__pycache__/` (the never-wired Python scaffolding — `api/inquiry.py` itself was never built; Stage 6 replaced this whole layer with `lib/inquiry/*.ts`)
+- `tests/*.py` + `tests/__pycache__/` (the Python pytest suite for the same dead backend)
+- `pytest.ini`, `requirements.txt`, `docker-compose.yml`
+
+**Not needed — checked directly, already resolved:** the original outline said to remove `normalize.css`/`react-boxicons` as dependencies. Neither is in `package.json` — they only existed in the pre-rebuild Vite `package.json`, which Stage 1 replaced wholesale rather than edited. Nothing to do here.
+
+**Docs to rewrite, not delete:**
+- Root `README.md` is still the untouched `create-vite` template ("# React + Vite / This template provides a minimal setup..."). Replace with real project info: what this is, the stack, how to run it, a pointer to `docs/PLAN.md`.
+- `CLAUDE.md`'s Architecture/Styling/Routing sections still describe the Vite SPA. Rewrite for the Next.js reality — App Router structure, Tailwind v4 tokens, Supabase, `docs/PLAN.md` as the plan of record. `vercel.json`'s SPA rewrite is already gone (Stage 4.6), so that specific note is stale too.
+
+**Optional, local-only, not a repo change:** `.venv/` still exists on disk (gitignored, never tracked) — safe to `rm -rf .venv` for local hygiene, doesn't affect the commit.
+
+**Acceptance:**
+- `src/`, `vite.config.js`, `index.html`, `api/_lib/*.py`, `tests/*.py`, `pytest.ini`, `requirements.txt`, `docker-compose.yml` no longer exist
+- `/about` and `/` (hero carousel) render their images correctly from `public/` with no layout shift or broken images — verified visually, not just build-success
+- `README.md` and `CLAUDE.md` both describe the actual Next.js project, no stale Vite/Python references left
+- `npm run build && npm run lint && npx tsc --noEmit && npm test` all pass
+
+**Verified on `chore/stage7-cleanup`, both at the file level and by actually rendering the pages.** All deletions/moves confirmed directly on disk (`ls`, `git status`) — `src/`, `api/_lib`, `tests/`, `vite.config.js`, `index.html`, `pytest.ini`, `requirements.txt`, `docker-compose.yml` all gone; the 6 images landed in `public/about/` and `public/hero/` as specified. `app/about/page.tsx` and `HeroCarousel.tsx` diffs match the spec exactly (`src="/about/team.webp"` etc., `slides` array retyped, `StaticImageData` import dropped, `key={slide.image}`). Independently reran the full verification suite — build, lint, `tsc --noEmit`, and all 135 tests pass. Codex's own environment had no browser available, so it could only confirm HTTP 200s on the image URLs; ran `npm run dev` and used a real browser to check the rendered pages directly — all 3 About images render, all 3 hero carousel slides render and advance correctly on manual navigation.
+
+**One real bug found in the process, not part of Stage 7's scope.** Next.js's dev overlay flagged a hydration mismatch at `components/Header.tsx:133` — the logo `<Image>`'s `src` depends on `resolvedTheme` (from `next-themes`) with no mount guard, so the server-rendered HTML and the first client render can disagree on light vs. dark logo whenever the resolved theme differs from the unguarded default. Confirmed via `git blame`-equivalent reasoning that this is pre-existing from Stage 4.5, not introduced by anything Stage 7 touched (Stage 7 only changed image path strings in two unrelated files). Doesn't visually break anything — React recovers using the client version — but is a real console error on every page load. `components/ThemeToggle.tsx` already has the correct fix pattern for exactly this problem (`useSyncExternalStore` with `getServerSnapshot` returning `false`), sitting right next to the buggy code; Header.tsx just never adopted it. Follow-up fix scoped and handed off separately.
 
 ### Stage 8+ — Forward-looking scope, not yet re-planned for this stack
 
-The original plan had Phase 2 (outbox hardening — acknowledgement emails, production rate limiting, structured logging, Sentry), Phase 3 (LLM triage), and Phase 4 (an ops surface for staff). None of this has been touched by the rebuild; it's still genuinely future work, not superseded by anything above. Full original detail is in Appendix C — re-plan for the TypeScript stack when Stage 6 ships and this becomes the next priority.
+The original plan had Phase 2 (outbox hardening — acknowledgement emails, production rate limiting, structured logging, Sentry), Phase 3 (LLM triage), and Phase 4 (an ops surface for staff). **Phase 3 is dropped per D-011** (2026-08-18, free-tier-only constraint — the Anthropic API has no free tier, direct conflict). Phase 2 and Phase 4 are still genuinely future work, not superseded by anything above, but Phase 2's outbox-drain cron needs redesigning around Vercel Hobby's once-daily cron cap before it's built (D-011). Full original detail is in Appendix C — re-plan for the TypeScript stack when this becomes the next priority.
 
 ---
 
@@ -578,6 +625,48 @@ destinations out of hardcoded JSX in the first place.
 
 *Reverse if:* the number of people who need to edit destinations grows past the maintainer and
 one staffer, at which point a real CMS's editing UX starts to matter more than vendor count.
+
+---
+
+## D-011 · Project runs on free tiers only; Phase 3 (LLM triage) is dropped
+
+**Decided 2026-08-18:** The user stated a hard constraint — this project should be cost-free,
+staying on free tiers across every service. Audited every service actually in use or planned
+against that:
+
+| Service | Free-tier risk |
+|---|---|
+| Vercel (hosting) | Hobby's terms restrict it to personal/non-commercial use — a live conflict, not a future one, since this commercial site is already deployed there. Open item, not yet resolved — see below. |
+| Vercel Cron | Free on Hobby, capped at once-per-day invocations — conflicts with the outbox-drain cron's original `*/1` (every-minute) design in the architecture reference (Appendix B). The nightly triage cron would have been fine as daily, but is moot now that triage itself is dropped. |
+| Supabase | Free projects auto-pause after a period of inactivity, needing a manual resume — a real risk for a low-traffic site, not yet mitigated. |
+| Resend | ~3,000 emails/month free, ~2 emails/inquiry from Stage 6 → roughly 1,500 inquiries/month ceiling. Not a realistic risk at this business's volume. |
+| Google OAuth | No paid tier exists for this at all. No risk. |
+| Anthropic API (Phase 3 triage) | No free tier. D-007's own reasoning ("cost rounds to near zero") already conceded a nonzero cost — direct conflict with a literal free-tier-only rule. |
+| Sentry (Phase 2) | Free tier exists with an event cap; likely fine at this project's realistic volume, not verified against current limits. |
+
+**Decided:** Phase 3 (LLM triage — auto-segmenting and scoring leads, drafting replies) is
+**dropped from the plan entirely**, not deferred. Leads stay manually triaged by whoever reads
+the inquiry emails, which is how the business already operates today. This reverses D-007 in
+spirit (LLM triage was accepted there on the reasoning that its cost was negligible; "negligible"
+is not "free," and free-tier-only is the harder constraint now). D-007 itself is left in place,
+not rewritten, per the decision log's own convention — this entry supersedes it rather than
+editing history.
+
+**Resolved 2026-08-18 — Vercel hosting stays on Hobby.** The user decided to accept the
+commercial-use risk as-is rather than upgrade or hold: stay on the free Hobby plan, and act
+only if Vercel actually flags the project, not preemptively. Revisit if that happens — until
+then this is settled, not open.
+
+**Still open, not yet decided:**
+- **The outbox-drain cron's frequency**, if Phase 2 hardening is ever built — needs a design
+  that respects Hobby's once-daily cron cap (now confirmed as the durable constraint, not a
+  temporary one) — e.g. draining opportunistically on the next inbound request rather than a
+  dedicated frequent cron.
+- **Supabase's auto-pause risk** has no mitigation yet (e.g., a scheduled keep-alive ping).
+
+*Reverse if:* the business's economics change enough that a small, predictable LLM cost stops
+being worth avoiding — at which point re-read D-007's original reasoning rather than starting
+from scratch.
 
 ---
 ---
@@ -987,7 +1076,12 @@ once there are leads to lose.
 - [ ] Undelivered outbox depth is alertable
 - [ ] Every submission is traceable in logs by reference code
 
-## Phase 3 · LLM triage — not started, not superseded
+## Phase 3 · LLM triage — DROPPED per D-011 (2026-08-18), kept below for historical record only
+
+**Not being built.** The Anthropic API has no free tier, and the project's free-tier-only
+constraint (D-011) takes priority over D-007's original "cost rounds to near zero" reasoning.
+Leads stay manually triaged. The detail below is left as-is per the decision log's convention
+of not rewriting history — it describes what was planned, not what will happen.
 
 Goal: every new lead is auto-segmented, scored, and paired with a draft reply before the agent
 opens it. Optional to the business — the form works without it. Depends on Phase 2; triage reads
