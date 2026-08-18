@@ -1,20 +1,17 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import Container from "@/components/Container";
 import Icon from "@/components/Icon";
 import { cn } from "@/lib/utils";
-import carouselOne from "@/src/assets/carousel_01.webp";
-import carouselTwo from "@/src/assets/carousel_02.webp";
-import carouselThree from "@/src/assets/carousel_03.webp";
 
-const slides: Array<{ image: StaticImageData; alt: string }> = [
-  { image: carouselOne, alt: "Traditional boats in a bright turquoise Philippine lagoon" },
-  { image: carouselTwo, alt: "A Philippine island coastline viewed from the water" },
-  { image: carouselThree, alt: "A tropical beach and clear water beneath a bright sky" },
+const slides: Array<{ image: string; alt: string }> = [
+  { image: "/hero/carousel_01.webp", alt: "Traditional boats in a bright turquoise Philippine lagoon" },
+  { image: "/hero/carousel_02.webp", alt: "A Philippine island coastline viewed from the water" },
+  { image: "/hero/carousel_03.webp", alt: "A tropical beach and clear water beneath a bright sky" },
 ];
 
 export default function HeroCarousel() {
@@ -40,7 +37,7 @@ export default function HeroCarousel() {
       <div className="absolute inset-0 -z-10">
         {slides.map((slide, index) => (
           <Image
-            key={slide.image.src}
+            key={slide.image}
             src={slide.image}
             alt={slide.alt}
             fill

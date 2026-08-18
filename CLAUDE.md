@@ -1,67 +1,61 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance for coding agents working in this repository.
 
 ## Project
 
-Marketing site for Creative Journeys Travel PH, a Philippines-based wholesaler travel agency (FIT / GIT / MICE). Static React SPA — no backend, no API, no database, no tests. Deployed on Vercel.
+Creative Journeys Travel PH is a marketing and inquiry site for a Philippines-based wholesaler travel agency serving FIT, GIT, and MICE programs. The production application uses Next.js 16.3, TypeScript, Tailwind CSS v4, Supabase, Auth.js / next-auth v5, and Resend.
 
-**Active work: rebuilding the frontend on Next.js 16 / TypeScript (branch `rebuild/nextjs`), then resuming the inquiry form.** The full plan, decision log, architecture reference, and task history all live in one file now: **`docs/PLAN.md`** — start there. (It consolidates what used to be `docs/README.md`, `architecture.md`, `decisions.md`, and `phase-0-blockers.md` through `phase-4-ops.md`, retired 2026-08-15 to stop maintaining two plans that increasingly contradicted each other.) Phase 0 is fully done — P0-1/P0-2 (routing) shipped in PR #2 (`dd5a0ad`), P0-3 through P0-9 (images, SEO, privacy page, dead code) shipped in PR #5 (`ada0159`). The Next.js rebuild (`docs/PLAN.md` D-008–D-010) reverses D-001 — the inquiry backend becomes a TypeScript Route Handler on Supabase instead of a Python function on Neon. Everything below this point describes the **pre-rebuild Vite SPA**, which still exists on `main` and is being deleted in the rebuild's Stage 7.
+The plan of record is [`docs/PLAN.md`](docs/PLAN.md). Read it before making project-level changes, especially when a task refers to a stage, decision record, or acceptance criterion.
+
+## Workflow
+
+- Work on a feature or fix branch; do not work directly on `main`.
+- Preserve unrelated working-tree changes and do not rewrite user-owned history.
+- Do not commit, push, merge, or open a PR unless the task explicitly asks for it.
+- Keep server-only credentials in `.env.local` or deployment environment settings; never log or commit their values.
+- Follow the project's test-first rule for new validation, data-access, authentication, and security contracts.
 
 ## Commands
 
 ```bash
-npm install       # node_modules is not committed; run this first
-npm run dev       # Vite dev server on port 3000, opens a browser automatically
-npm run build     # production build to dist/
-npm run preview   # serve the built dist/
-npm run lint      # eslint over the repo
+npm install
+npm run dev
+npm run build
+npm run lint
+npx tsc --noEmit
+npm test
+npm run verify:rls
 ```
 
-There is no test runner or test suite. The `README.md` is the untouched Vite template and describes nothing about this project.
+Use `.env.example` as the environment variable reference. The development server runs the Next.js application on port 3000 by default.
 
 ## Architecture
 
-`main.jsx` → `App.jsx` (BrowserRouter) → `MainLayout` (Navbar + children + Footer) → `<Routes>`. The layout sits *inside* the Router, so Navbar/Footer can use `useNavigate`.
+The application uses the Next.js App Router. Route UI lives in `app/`: shared shell and providers are in `app/layout.tsx`, public pages are colocated by URL, and dynamic destination pages use `generateStaticParams` with revalidation. Route Handlers live under `app/api/`; the inquiry endpoint is `app/api/inquiry/route.ts`.
 
-Routes are declared in `src/App.jsx`: `/`, `/about`, `/contact`, and a catch-all `*` that renders `pages/Soon.jsx`, a "coming soon" placeholder. Navbar and Footer both link to `/services`, which has no route and deliberately falls through to `Soon`. Adding a real page means adding both the route and the component.
+Shared UI primitives and site chrome live in `components/`. Business and integration code lives in `lib/`: Supabase clients, authentication helpers, SEO metadata, content access, and the inquiry schema, security, persistence, and notification modules are kept server/client appropriate. `app/admin/` is protected with Auth.js Google OAuth and the server-side email allow-list.
 
-Navigation is done with `useNavigate()` on `<li onClick>` handlers rather than `<Link>`; only `Card.jsx` uses `<Link>`. Follow whichever the surrounding file already uses.
-
-`src/pages/` are route targets, `src/components/` are reusable pieces. `Home` composes `ImageSlider` (auto-advancing 5s carousel with prev/next buttons) and `TourPackage`, which hardcodes the destination list as four `<Card>` elements with imported image assets — there is no data file or CMS; adding a destination means editing `TourPackage.jsx` and importing a new image.
-
-`src/components/Banner.jsx` / `Banner.scss` are dead code, not referenced anywhere.
+Supabase migrations are stored in `migrations/`. Public images and brand assets are stored in `public/`, including `public/about/`, `public/hero/`, and `public/destinations/`. Do not reintroduce source-tree asset imports for images that belong in `public/`.
 
 ## Styling
 
-SCSS, one file per component/page, colocated and imported at the top of its `.jsx` (`import "./Card.scss"`). Global resets live in `src/assets/styles/global.scss` (normalize.css + Google Fonts) and are imported once in `main.jsx`; `App.scss` holds the border-box reset and sets `html { font-size: 10px }` — so `1rem` is 10px here, not 16px, despite the stale comments in `variables.scss`.
+The design system is defined in `app/globals.css`. It contains raw palette values, semantic site aliases, Tailwind v4 theme mappings, type and spacing scales, radii, shadows, motion tokens, tap-target sizing, and light/dark theme rules. Prefer the existing semantic tokens and shared primitives (`Button`, `Card`, `Container`, `Section`, `PageHeader`, and `Icon`) over one-off visual systems.
 
-`src/assets/styles/variables.scss` is effectively unused: `Navbar.scss` has its import commented out, `Banner.scss` `@use`s it but is dead code, and `$primary-color` is a comma-separated list of five hex values rather than a usable color. Colors and sizes are hardcoded per component. Don't assume a design token system exists.
+Typography uses the configured Playfair Display and Manrope fonts. Preserve the existing accessibility conventions: real labels and landmarks, visible focus states, reduced-motion handling, minimum touch targets, and appropriate `aria-*` attributes.
 
-Responsive breakpoint in use is `@media screen and (max-width: 768px)` (Navbar, Footer). Layout widths use the `width: min(95vw, 1400px); margin-inline: auto` pattern.
+## Routing and SEO
 
-Icons are Boxicons, used as CSS classes (`<i className="bx bxs-paper-plane" />`). The stylesheet is imported in `main.jsx` from the `boxicons` package, which is only present as a transitive dependency of `react-boxicons` — `package.json` does not list it directly. If icons break after a dependency change, that's why.
+Pages are filesystem routes under `app/`; navigation uses Next.js `Link`. Per-route metadata is defined through `lib/seo.ts` and route-level `generateMetadata` functions. `app/sitemap.ts` and `app/robots.ts` provide generated crawler routes. There is no SPA rewrite configuration; Next.js handles pages and `app/api/*/route.ts` handlers directly.
 
-## Routing
+Destination detail pages are generated from Supabase data and revalidated after publishing. Destination cards link to `/contact?destination=<slug>`, while the inquiry form accepts the destination as free text and offers known destinations as datalist suggestions.
 
-Deep links work in production. `vercel.json` serves the SPA shell at every non-API path and lets React Router resolve the route client-side:
+<!-- BEGIN:nextjs-agent-rules -->
 
-```json
-{ "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }] }
-```
+# This is NOT the Next.js you know
 
-Measured against the live site 2026-07-22, after PR #2 (`dd5a0ad`):
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-| Path | Result |
-|---|---|
-| `/`, `/about`, `/contact`, `/services`, `/privacy`, any unknown path | `200` |
-| `/favicon.svg` (file exists in build output) | `200` |
-| `/api/inquiry` (nothing deployed there yet) | `404` |
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
-Vercel's filesystem check runs ahead of the rewrite, so real static files still win — that's why `favicon.svg` returns its own contents rather than the SPA shell. The `(?!api/)` exclusion reserves `/api` for the Phase 1 serverless function; the `404` confirms those paths fall through the rewrite instead of being swallowed by it.
-
-Adding a page means adding the route in `App.jsx` only — `vercel.json` needs no change, since the catch-all already covers every path.
-
-**History, so the old config isn't reintroduced:** this file previously declared `statusCode: 308` inside a `rewrites` rule. `statusCode` is a `redirects` property, and Vercel honours it, so every path that wasn't an existing file 308-redirected to `/` — routes worked in the dev server and were unreachable in production. Fixed in PR #2.
-
-`vite.config.js` proxies `/api` to `http://localhost:3000`, which is the dev server itself. It's vestigial — there is no API.
+<!-- END:nextjs-agent-rules -->
