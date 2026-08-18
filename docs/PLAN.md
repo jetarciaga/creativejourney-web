@@ -657,12 +657,21 @@ commercial-use risk as-is rather than upgrade or hold: stay on the free Hobby pl
 only if Vercel actually flags the project, not preemptively. Revisit if that happens — until
 then this is settled, not open.
 
+**Resolved 2026-08-18 — Supabase auto-pause mitigated.** Built on `chore/supabase-keep-alive`
+(verified, not yet merged): `vercel.json`'s single daily cron (`0 0 * * *`, respecting the
+Hobby cap) hits `app/api/cron/keep-alive/route.ts`, which checks a `CRON_SECRET` bearer token
+before doing a cheap public-client read against `destinations` — enough real API activity to
+keep the free-tier project from auto-pausing, with no elevated privilege (uses the public
+client, not the service-role one) and no risk of public abuse (rejects when the secret is
+missing or wrong, not just when it's present-but-different).
+
 **Still open, not yet decided:**
 - **The outbox-drain cron's frequency**, if Phase 2 hardening is ever built — needs a design
   that respects Hobby's once-daily cron cap (now confirmed as the durable constraint, not a
   temporary one) — e.g. draining opportunistically on the next inbound request rather than a
-  dedicated frequent cron.
-- **Supabase's auto-pause risk** has no mitigation yet (e.g., a scheduled keep-alive ping).
+  dedicated frequent cron. Note this now shares `vercel.json`'s `crons` array with the
+  keep-alive job, so Hobby's cap on the *number* of cron jobs (not just their frequency) also
+  needs checking before adding a second entry.
 
 *Reverse if:* the business's economics change enough that a small, predictable LLM cost stops
 being worth avoiding — at which point re-read D-007's original reasoning rather than starting
