@@ -2,15 +2,11 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
+import useMounted from "@/lib/use-mounted";
 
 const themeModes = ["light", "dark", "system"] as const;
 type ThemeMode = (typeof themeModes)[number];
-
-const emptySubscribe = () => () => {};
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
 
 function isThemeMode(theme: string | undefined): theme is ThemeMode {
   return themeModes.includes(theme as ThemeMode);
@@ -23,11 +19,7 @@ function ThemeIcon({ theme }: { theme: ThemeMode }) {
 
 export default function ThemeToggle() {
   const { setTheme, theme } = useTheme();
-  const mounted = useSyncExternalStore(
-    emptySubscribe,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
+  const mounted = useMounted();
   const currentTheme = mounted && isThemeMode(theme) ? theme : "system";
   const currentIndex = themeModes.indexOf(currentTheme);
   const nextTheme = themeModes[(currentIndex + 1) % themeModes.length] ?? "system";
