@@ -9,6 +9,7 @@ import { useTheme } from "next-themes";
 import Container from "@/components/Container";
 import Icon from "@/components/Icon";
 import ThemeToggle from "@/components/ThemeToggle";
+import useMounted from "@/lib/use-mounted";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -112,7 +113,8 @@ function NavItems({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === "dark"
+  const mounted = useMounted();
+  const logoSrc = mounted && resolvedTheme === "dark"
     ? "/brand/logo-wordmark-dark.png"
     : "/brand/logo-wordmark-light.png";
 
