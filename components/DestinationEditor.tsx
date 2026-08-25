@@ -160,7 +160,7 @@ export default function DestinationEditor({
         </button>
         <Link
           className="inline-flex min-h-[var(--site-tap-min)] items-center rounded-md border border-border px-5 py-3 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
-          href="/admin"
+          href="/admin/destinations"
         >
           Cancel
         </Link>

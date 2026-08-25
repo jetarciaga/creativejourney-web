@@ -1,5 +1,5 @@
 import DestinationEditor from "@/components/DestinationEditor";
-import { createDestination } from "@/app/admin/actions";
+import { createDestination } from "@/app/admin/destinations/actions";
 import { requireAdmin } from "@/lib/authz";
 
 export default async function NewDestinationPage() {
