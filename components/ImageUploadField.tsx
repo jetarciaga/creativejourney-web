@@ -2,21 +2,35 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
-import { requestStoryImageUpload } from "@/app/admin/stories/actions";
-import { prepareStoryImage } from "@/lib/image-optimize";
+import { prepareImageForUpload } from "@/lib/image-optimize";
 
-export type StoryImageUploadState = "idle" | "preparing" | "uploading";
+export type ImageUploadState = "idle" | "preparing" | "uploading";
 
-export default function StoryImageField({
+type RequestUploadUrl = (
+  contentType: string,
+  byteSize: number,
+) => Promise<{ path: string; token: string }>;
+
+export default function ImageUploadField({
   initialPath,
   initialPreviewUrl,
+  requestUploadUrl,
+  bucket,
+  fieldName,
+  label,
+  previewAlt,
   uploadState,
   onUploadStateChange,
 }: {
   initialPath: string;
   initialPreviewUrl?: string;
-  uploadState: StoryImageUploadState;
-  onUploadStateChange: (state: StoryImageUploadState) => void;
+  requestUploadUrl: RequestUploadUrl;
+  bucket: string;
+  fieldName: string;
+  label: string;
+  previewAlt?: string;
+  uploadState: ImageUploadState;
+  onUploadStateChange: (state: ImageUploadState) => void;
 }) {
   const [path, setPath] = useState(initialPath);
   const [previewUrl, setPreviewUrl] = useState(initialPreviewUrl ?? "");
@@ -39,16 +53,16 @@ export default function StoryImageField({
     onUploadStateChange("preparing");
 
     try {
-      const prepared = await prepareStoryImage(file);
+      const prepared = await prepareImageForUpload(file);
       onUploadStateChange("uploading");
 
-      const upload = await requestStoryImageUpload(
+      const upload = await requestUploadUrl(
         prepared.contentType,
         prepared.blob.size,
       );
       const supabase = createPublicSupabaseClient();
       const { error: uploadError } = await supabase.storage
-        .from("story-images")
+        .from(bucket)
         .uploadToSignedUrl(upload.path, upload.token, prepared.blob, {
           contentType: prepared.contentType,
         });
@@ -78,12 +92,12 @@ export default function StoryImageField({
   return (
     <div className="space-y-4">
       <div>
-        <label className="flex flex-col gap-2 text-sm font-semibold text-text" htmlFor="story-cover-image">
-          Cover photo
+        <label className="flex flex-col gap-2 text-sm font-semibold text-text" htmlFor={`${fieldName}-upload`}>
+          {label}
           <input
             accept="image/jpeg,image/png,image/webp,image/avif"
             className="rounded-md border border-border bg-bg px-3 py-3 text-sm text-text"
-            id="story-cover-image"
+            id={`${fieldName}-upload`}
             onChange={handleFileChange}
             type="file"
           />
@@ -93,7 +107,7 @@ export default function StoryImageField({
         </p>
       </div>
 
-      <input name="coverImagePath" type="hidden" value={path} readOnly />
+      <input name={fieldName} type="hidden" value={path} readOnly />
 
       {uploadState === "preparing" ? (
         <p aria-live="polite" className="text-sm font-semibold text-accent">
@@ -116,7 +130,7 @@ export default function StoryImageField({
           {/* A blob URL is created locally for the just-uploaded preview. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            alt="Selected story cover preview"
+            alt={previewAlt ?? `${label} preview`}
             className="absolute inset-0 h-full w-full object-cover"
             src={previewUrl}
           />

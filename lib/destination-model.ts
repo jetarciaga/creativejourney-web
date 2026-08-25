@@ -1,3 +1,10 @@
+import {
+  isStorageImagePath,
+  storageImageUrl,
+} from "@/lib/image-storage";
+
+export { isStorageImagePath };
+
 export type Destination = {
   id: string;
   slug: string;
@@ -159,8 +166,8 @@ export function parseDestinationForm(formData: FormData): DestinationFormInput {
   }
 
   const heroImage = formText(formData, "heroImage", 500);
-  if (!/^(?:\/|https:\/\/)/.test(heroImage)) {
-    throw new Error("heroImage must be a local path or an HTTPS URL.");
+  if (!heroImage.startsWith("/") && !isStorageImagePath(heroImage)) {
+    throw new Error("heroImage must be a local path or a validated Storage image path.");
   }
 
   const displayOrderText = formText(formData, "displayOrder", 10);
@@ -183,6 +190,10 @@ export function parseDestinationForm(formData: FormData): DestinationFormInput {
     displayOrder,
     inquiryDestinationValue: formText(formData, "inquiryDestinationValue", 120),
   };
+}
+
+export function destinationImageUrl(path: string): string {
+  return storageImageUrl("destination-images", path);
 }
 
 export function toDestinationRow(input: DestinationFormInput) {

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { requestStoryImageUpload } from "@/app/admin/stories/actions";
 import Button from "@/components/Button";
-import StoryImageField, {
-  type StoryImageUploadState,
-} from "@/components/StoryImageField";
+import ImageUploadField, {
+  type ImageUploadState,
+} from "@/components/ImageUploadField";
 import type { Story } from "@/lib/story-model";
 
 type StoryAction = (formData: FormData) => void | Promise<void>;
@@ -33,14 +34,19 @@ export default function StoryEditor({
   submitLabel: string;
 }) {
   const [imageUploadState, setImageUploadState] =
-    useState<StoryImageUploadState>("idle");
+    useState<ImageUploadState>("idle");
 
   return (
     <form action={action} className="space-y-8">
-      <StoryImageField
+      <ImageUploadField
+        bucket="story-images"
+        fieldName="coverImagePath"
         initialPath={initialStory?.coverImagePath ?? ""}
         initialPreviewUrl={initialImageUrl}
         onUploadStateChange={setImageUploadState}
+        requestUploadUrl={requestStoryImageUpload}
+        label="Cover photo"
+        previewAlt="Selected story cover preview"
         uploadState={imageUploadState}
       />
 

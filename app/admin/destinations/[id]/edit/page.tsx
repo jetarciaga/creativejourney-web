@@ -3,7 +3,11 @@ import DestinationEditor from "@/components/DestinationEditor";
 import { updateDestination } from "@/app/admin/destinations/actions";
 import { requireAdmin } from "@/lib/authz";
 import { getAdminDestinationById } from "@/lib/destinations";
-import { isDestinationId } from "@/lib/destination-model";
+import {
+  destinationImageUrl,
+  isDestinationId,
+  isStorageImagePath,
+} from "@/lib/destination-model";
 
 type EditDestinationPageProps = {
   params: Promise<{ id: string }>;
@@ -24,6 +28,11 @@ export default async function EditDestinationPage({
     notFound();
   }
 
+  const initialPreviewUrl = destination.heroImage.startsWith("/") ||
+    !isStorageImagePath(destination.heroImage)
+    ? destination.heroImage
+    : destinationImageUrl(destination.heroImage);
+
   return (
     <main id="main-content" className="bg-bg py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -40,6 +49,7 @@ export default async function EditDestinationPage({
           <DestinationEditor
             action={updateDestination.bind(null, destination.id)}
             initialDestination={destination}
+            initialPreviewUrl={initialPreviewUrl}
             submitLabel="Save destination"
           />
         </div>

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import StoryEditor from "@/components/StoryEditor";
+import DestinationEditor from "@/components/DestinationEditor";
 
-vi.mock("@/app/admin/stories/actions", () => ({
-  requestStoryImageUpload: vi.fn(),
+vi.mock("@/app/admin/destinations/actions", () => ({
+  requestDestinationImageUpload: vi.fn(),
 }));
 
 vi.mock("@/components/ImageUploadField", () => ({
@@ -21,19 +21,21 @@ vi.mock("@/components/ImageUploadField", () => ({
   ),
 }));
 
-describe("StoryEditor", () => {
-  it("blocks submit while the cover photo is uploading", () => {
+describe("DestinationEditor", () => {
+  it("blocks submit while the hero image is uploading", () => {
     const action = vi.fn();
 
     render(
-      <StoryEditor
+      <DestinationEditor
         action={action}
-        initialStory={null}
-        submitLabel="Create story"
+        initialDestination={null}
+        submitLabel="Create destination"
       />,
     );
 
-    const submitButton = screen.getByRole("button", { name: "Create story" });
+    const submitButton = screen.getByRole("button", {
+      name: "Create destination",
+    });
     expect(submitButton).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Start upload" }));
