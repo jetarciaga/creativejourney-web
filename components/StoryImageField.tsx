@@ -5,18 +5,21 @@ import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import { requestStoryImageUpload } from "@/app/admin/stories/actions";
 import { prepareStoryImage } from "@/lib/image-optimize";
 
-type UploadState = "idle" | "preparing" | "uploading";
+export type StoryImageUploadState = "idle" | "preparing" | "uploading";
 
 export default function StoryImageField({
   initialPath,
   initialPreviewUrl,
+  uploadState,
+  onUploadStateChange,
 }: {
   initialPath: string;
   initialPreviewUrl?: string;
+  uploadState: StoryImageUploadState;
+  onUploadStateChange: (state: StoryImageUploadState) => void;
 }) {
   const [path, setPath] = useState(initialPath);
   const [previewUrl, setPreviewUrl] = useState(initialPreviewUrl ?? "");
-  const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState("");
   const objectUrlRef = useRef<string | null>(null);
 
@@ -33,11 +36,11 @@ export default function StoryImageField({
     if (!file) return;
 
     setError("");
-    setState("preparing");
+    onUploadStateChange("preparing");
 
     try {
       const prepared = await prepareStoryImage(file);
-      setState("uploading");
+      onUploadStateChange("uploading");
 
       const upload = await requestStoryImageUpload(
         prepared.contentType,
@@ -61,9 +64,9 @@ export default function StoryImageField({
       objectUrlRef.current = objectUrl;
       setPath(upload.path);
       setPreviewUrl(objectUrl);
-      setState("idle");
+      onUploadStateChange("idle");
     } catch (uploadError) {
-      setState("idle");
+      onUploadStateChange("idle");
       setError(
         uploadError instanceof Error
           ? uploadError.message
@@ -92,12 +95,12 @@ export default function StoryImageField({
 
       <input name="coverImagePath" type="hidden" value={path} readOnly />
 
-      {state === "preparing" ? (
+      {uploadState === "preparing" ? (
         <p aria-live="polite" className="text-sm font-semibold text-accent">
           Preparing photo…
         </p>
       ) : null}
-      {state === "uploading" ? (
+      {uploadState === "uploading" ? (
         <p aria-live="polite" className="text-sm font-semibold text-accent">
           Uploading photo…
         </p>

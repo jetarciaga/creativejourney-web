@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import Button from "@/components/Button";
-import StoryImageField from "@/components/StoryImageField";
+import StoryImageField, {
+  type StoryImageUploadState,
+} from "@/components/StoryImageField";
 import type { Story } from "@/lib/story-model";
 
 type StoryAction = (formData: FormData) => void | Promise<void>;
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ label, disabled }: { label: string; disabled: boolean }) {
   const { pending } = useFormStatus();
 
   return (
-    <Button disabled={pending} type="submit">
+    <Button disabled={pending || disabled} type="submit">
       {pending ? "Saving…" : label}
     </Button>
   );
@@ -29,11 +32,16 @@ export default function StoryEditor({
   action: StoryAction;
   submitLabel: string;
 }) {
+  const [imageUploadState, setImageUploadState] =
+    useState<StoryImageUploadState>("idle");
+
   return (
     <form action={action} className="space-y-8">
       <StoryImageField
         initialPath={initialStory?.coverImagePath ?? ""}
         initialPreviewUrl={initialImageUrl}
+        onUploadStateChange={setImageUploadState}
+        uploadState={imageUploadState}
       />
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -97,7 +105,10 @@ export default function StoryEditor({
       </label>
 
       <div className="flex flex-wrap gap-3 border-t border-border pt-6">
-        <SubmitButton label={submitLabel} />
+        <SubmitButton
+          disabled={imageUploadState !== "idle"}
+          label={submitLabel}
+        />
         <Link
           className="inline-flex min-h-[var(--site-tap-min)] items-center rounded-md border border-border px-5 py-3 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
           href="/admin/stories"
