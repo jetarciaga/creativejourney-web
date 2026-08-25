@@ -67,6 +67,71 @@ if (!writeError) {
   throw new Error("RLS failure: an anonymous destination insert was accepted.");
 }
 
+const { data: visibleStories, error: storyReadError } = await anonymous
+  .from("stories")
+  .select("slug, published, cover_image_alt");
+
+if (storyReadError) {
+  throw new Error("Anonymous story read failed: " + storyReadError.message);
+}
+
+if (
+  !visibleStories?.every(
+    (story) =>
+      story.published === true &&
+      typeof story.slug === "string" &&
+      typeof story.cover_image_alt === "string" &&
+      story.cover_image_alt.trim().length > 0,
+  )
+) {
+  throw new Error(
+    "RLS/data contract failure: an anonymous story read returned a draft or invalid alt text.",
+  );
+}
+
+const storyProbeSlug = "__anonymous-story-rls-probe__";
+const { error: storyWriteError } = await anonymous.from("stories").insert({
+  slug: storyProbeSlug,
+  title: "Anonymous story RLS probe",
+  story_date: "2026-01-01",
+  cover_image_path: "2026/11111111-1111-4111-8111-111111111111.webp",
+  cover_image_alt: "Security test image",
+  body: "This insert must be rejected by RLS.",
+  published: false,
+});
+
+if (!storyWriteError) {
+  const admin = createClient(url, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  });
+  await admin.from("stories").delete().eq("slug", storyProbeSlug);
+  throw new Error("RLS failure: an anonymous story insert was accepted.");
+}
+
+const storyImageProbePath = "__anonymous-story-upload-probe__/probe.jpg";
+const { error: storyUploadError } = await anonymous.storage
+  .from("story-images")
+  .upload(
+    storyImageProbePath,
+    new Blob([new Uint8Array([255, 216, 255, 217])], { type: "image/jpeg" }),
+  );
+
+if (!storyUploadError) {
+  const admin = createClient(url, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  });
+  await admin.storage.from("story-images").remove([storyImageProbePath]);
+  throw new Error("RLS failure: an anonymous story image upload was accepted.");
+}
+
 console.log(
   JSON.stringify(
     {
@@ -74,6 +139,12 @@ console.log(
       visibleDestinations: visibleDestinations.length,
       anonymousWrite: "rejected",
       rejectedCode: writeError.code ?? null,
+      anonymousStoriesRead: "published-only",
+      visibleStories: visibleStories.length,
+      anonymousStoryWrite: "rejected",
+      storyWriteRejectedCode: storyWriteError.code ?? null,
+      anonymousStoryUpload: "rejected",
+      storyUploadRejectedCode: storyUploadError.name ?? storyUploadError.code ?? null,
     },
     null,
     2,

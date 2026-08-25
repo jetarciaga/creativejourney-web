@@ -8,7 +8,7 @@
 > is still useful — the full decision log, the data model, the validation rules, forward-looking
 > Phase 2–4 scope — is folded in as appendices at the end, not deleted.
 
-## Status (2026-08-18)
+## Status (2026-08-25)
 
 **Merged and live, through Stage 7 plus the destination and hydration follow-up fixes.** PR #9 (Stages 0–4.6) merged at `eb8fb90`. PR #10 (Stage 5) merged at `d67e560`. PR #11 (Stage 6, inquiry form) merged at `23b8416`. PR #12 (free-text destination fix) merged at `863506c`. **PR #13 (header logo hydration fix) merged at `39bc942`, commit `dae6e7a`. PR #14 (Stage 7 cleanup) merged at `0ba4ca7`, commit `dcfe9aa`.** All confirmed directly via `gh pr view` against the correct repo (`jetarciaga/creativejourney-web` — a Codex report momentarily typo'd the URL as `creativejourneysph.com`, caught and corrected before it mattered).
 
@@ -22,7 +22,15 @@
 
 **Outstanding, not part of Stage 6 itself:** the free-text destination follow-up (letting the inquiry form accept a destination not in the `destinations` table, via a datalist instead of a closed `<select>`) was drafted as a Codex prompt but never landed — confirmed directly by reading `InquiryForm.tsx` on `main`, which still has the original `<select>`. The merge happened before that prompt was run, or it was run but not committed before merging. Low priority, frontend-only, no schema/backend change needed (`destination` is already free text at both the Zod and DB level) — pick it up whenever, doesn't block anything.
 
-Stage 7 (delete legacy Vite `src/`) and Stage 8+ (Phase 2/3/4, not yet re-planned for TypeScript) have not started.
+Stage 7 (delete legacy Vite `src/`) is complete. **Stage 8 (client success stories) is implemented
+and independently verified on `feature/stage8-stories`, not yet pushed.** Migrations `006` and
+`007` are applied; `npm run verify:rls` passes (published-only reads, anonymous writes rejected on
+both the `stories` table and the `story-images` bucket). The full lifecycle — upload, browser
+optimization, publish, draft invisibility, replace, delete — was verified end to end in a real
+browser against the live Supabase project, with the optimizer's output checked at the byte level
+rather than by preview alone. Two real bugs turned up during that pass and were fixed: a
+client-bundle env-var inlining break in `lib/supabase/public.ts`, and a submit-during-upload race
+that could silently save a story with the wrong cover photo. Detail in the Stage 8 section below.
 
 Everything below this line is the history of how the rebuild got here, kept for context — not a status report. Stages 0–4.5 were applied on branch `rebuild/nextjs` (uncommitted, `main` untouched, nothing pushed), installed (`npm install` has run — `node_modules` and `package-lock.json` both present and consistent with `package.json`), and built and run (`.next/` exists from both a build and a dev server session). An independent review confirmed the app is real: logo-derived tokens in `app/globals.css`, the source-derived header/footer logo assets, Playfair Display + Manrope, the pin/C app icons, the existing component shell, `lib/content.ts` for services and destinations, `lib/seo.ts` for per-route metadata, and pages for `/`, `/about`, `/contact` (no form yet — that's Stage 6), `/privacy`, `/services` (+ `fit`/`git`/`mice`), `/partners`, `not-found`.
 
@@ -284,6 +292,87 @@ Contrast ratios computed against the WCAG 2.x formula, not eyeballed.
 
 ---
 
+## Stage 8 — Client success stories — DONE, verified 2026-08-25
+
+### What prompted this
+
+The site had no place to publish client success stories and no admin workflow for a non-developer
+to add one. Destinations were the only editable content type, and a story needs a device-uploaded
+photo plus a draft state that is enforced by RLS rather than only by the UI.
+
+### What to do
+
+1. Restructure destinations under `/admin/destinations/*` and add the content hub plus Stories tab.
+2. Add the `stories` table and public `story-images` bucket from migrations `006` and `007`.
+3. Add the server-only story model/data access, Auth.js-protected CRUD actions, signed upload URL
+   flow, browser optimizer, and the single Chromium optimizer spec.
+4. Add the admin editor, public listing/detail pages, navigation links, homepage section, SEO,
+   sitemap entries, and RLS probes.
+5. Apply the migrations and run `npm run verify:rls` with the maintainer's Supabase credentials —
+   done; both passed.
+
+### Acceptance
+
+- Destinations work at `/admin/destinations`, `/admin/destinations/new`, and
+  `/admin/destinations/[id]/edit`; `/admin` links to both content types.
+- `migrations/006_stories.sql` restricts public reads to `published = true`, and
+  `migrations/007_story-images-bucket.sql` creates a public read-only bucket with the four-image
+  MIME allow-list.
+- Stories support stable generated slugs, draft/published states, required alt text, signed
+  uploads, old-image cleanup, and public `/stories` plus `/stories/[slug]` pages.
+- Browser optimization handles EXIF orientation, 2400px downscaling, pass-through, and no
+  upscaling; the only Playwright coverage is `e2e/image-optimize.spec.ts`.
+- `npm run build`, `npm run lint`, `npx tsc --noEmit`, `npm test`, and `npm run test:e2e` pass
+  without applying migrations or running `npm run verify:rls`.
+
+### Verified 2026-08-25
+
+Manual pass against `npm run dev` and the live Supabase project, driven in a real browser rather
+than assumed from the automated suite:
+
+- The optimizer's output was inspected at the byte level, not judged by preview. A synthetic
+  phone-style photo (large, portrait, tagged with a real EXIF `Orientation=6`) was uploaded; the
+  stored object was downloaded and decoded directly, confirming `image/webp`, 1800×2400 — long
+  edge exactly the 2400px cap, and portrait. That combination is only possible if the EXIF
+  rotation was applied before the resize; had it been ignored, the output would be landscape.
+- A small, already-in-bounds image came back byte-for-byte identical to the source file —
+  pass-through confirmed, not just "looked unchanged."
+- Draft invisibility was confirmed as an RLS property, not a UI one: the public Supabase client
+  genuinely cannot read an unpublished row, verified by direct fetch against the object/row, not
+  only by the rendered page showing the empty state.
+- Publishing was confirmed live on all four surfaces a story should reach: `/stories`,
+  `/stories/[slug]`, the homepage section, and `/sitemap.xml`.
+- Replacing and deleting a story's photo were confirmed to actually remove the old Storage
+  object — fetching the old object URL afterward returns Supabase's `NoSuchKey`, not just a
+  changed database row.
+- Cover images were confirmed to be served through `/_next/image`, proving `remotePatterns` in
+  `next.config.ts` is correctly scoped, not bypassed.
+
+### Bugs found during verification
+
+Two real defects surfaced during the manual pass above, both reproduced directly before being
+sent back and fixed — not implementation nitpicks:
+
+1. **Client-bundle env-var inlining break.** `lib/supabase/public.ts` read its two
+   `NEXT_PUBLIC_*` variables via `process.env[name]` — a dynamic property access. Next.js only
+   inlines `NEXT_PUBLIC_*` values into the client bundle when it can statically see the literal
+   `process.env.NEXT_PUBLIC_X` reference at build time; every existing call site was server-side,
+   where real `process.env` supports dynamic lookup, so this had never surfaced. The first
+   client-side caller — the browser upload in `StoryImageField.tsx` — hit it immediately with
+   "Missing required public environment variable," even though the variable was set. Fixed by
+   referencing both variables as static literals instead of through a name-parameterized helper.
+   Worth remembering as a general trap: any future client-side env access in this codebase needs
+   the same static-literal treatment, not the dynamic-lookup pattern the server-only code uses.
+2. **Submit-during-upload race.** The Save/Create button wasn't disabled while a cover-photo
+   upload was still in flight. `SubmitButton` used `useFormStatus()`, which only reflects the
+   form's own submission state — it had no visibility into `StoryImageField`'s separate async
+   upload state. Submitting mid-upload silently saved the *previous* photo's path on edit (no
+   error at all — just the wrong photo) and failed loudly on create (empty path rejected by
+   validation). Reproduced directly by uploading a large photo and submitting immediately, then
+   fixed by lifting the upload state into `StoryEditor` and gating the submit button on it.
+
+---
+
 ## Stages
 
 Each stage leaves a working, deployable site. Per the standing TDD rule, the test harness lands first.
@@ -376,6 +465,13 @@ Destination convention, matching Stage 5's `public/destinations/` pattern: move 
 
 **One real bug found in the process, not part of Stage 7's scope.** Next.js's dev overlay flagged a hydration mismatch at `components/Header.tsx:133` — the logo `<Image>`'s `src` depends on `resolvedTheme` (from `next-themes`) with no mount guard, so the server-rendered HTML and the first client render can disagree on light vs. dark logo whenever the resolved theme differs from the unguarded default. Confirmed via `git blame`-equivalent reasoning that this is pre-existing from Stage 4.5, not introduced by anything Stage 7 touched (Stage 7 only changed image path strings in two unrelated files). Doesn't visually break anything — React recovers using the client version — but is a real console error on every page load. `components/ThemeToggle.tsx` already has the correct fix pattern for exactly this problem (`useSyncExternalStore` with `getServerSnapshot` returning `false`), sitting right next to the buggy code; Header.tsx just never adopted it. Follow-up fix scoped and handed off separately.
 
+### Stage 8 — Client success stories — DONE, verified 2026-08-25
+
+Stories are implemented and verified on `feature/stage8-stories`, not yet pushed. Migrations
+applied, `npm run verify:rls` passes, and the full lifecycle was verified in a real browser
+against live Supabase — see the Stage 8 detail block above for what was checked and the two bugs
+found and fixed along the way.
+
 ### Stage 8+ — Forward-looking scope, not yet re-planned for this stack
 
 The original plan had Phase 2 (outbox hardening — acknowledgement emails, production rate limiting, structured logging, Sentry), Phase 3 (LLM triage), and Phase 4 (an ops surface for staff). **Phase 3 is dropped per D-011** (2026-08-18, free-tier-only constraint — the Anthropic API has no free tier, direct conflict). Phase 2 and Phase 4 are still genuinely future work, not superseded by anything above, but Phase 2's outbox-drain cron needs redesigning around Vercel Hobby's once-daily cron cap before it's built (D-011). Full original detail is in Appendix C — re-plan for the TypeScript stack when this becomes the next priority.
@@ -388,9 +484,13 @@ The original plan had Phase 2 (outbox hardening — acknowledgement emails, prod
 npm run dev          # local check on every stage
 npm run build        # must succeed
 npm test             # Vitest — a11y contracts, schema rules, Phase 0 regressions
+npm run test:e2e     # one Chromium spec for the browser-only image optimizer
 npm run lint
 npx tsc --noEmit
 ```
+
+Playwright exists here because the browser-image path cannot be reached from jsdom; it is
+deliberately limited to the single optimizer spec and is not a general e2e layer.
 
 Checks automation won't catch:
 
@@ -410,7 +510,7 @@ The trust bar's client/group figure still needs a number from the site owner. No
 ---
 ---
 
-# Appendix A — Decision log (D-001–D-010)
+# Appendix A — Decision log (D-001–D-012)
 
 Each entry records what was decided, why, what was rejected, and what evidence would reverse it. Append new decisions at the bottom; don't rewrite old ones — that convention continues even after folding this log into PLAN.md.
 
@@ -683,6 +783,45 @@ being worth avoiding — at which point re-read D-007's original reasoning rathe
 from scratch.
 
 ---
+
+## D-012 · Story photos are optimized in the browser and uploaded to Supabase Storage via signed URLs
+
+**Decided 2026-08-25:** Story photos are downscaled and re-encoded to WebP in the browser before
+they are uploaded to a public `story-images` Supabase Storage bucket through a signed upload URL.
+The story row stores the validated object path, not a public URL. Small, in-bounds images may pass
+through untouched; the server still validates the processed MIME type and byte size.
+
+**Why:** The admin works from a phone, so the upload needs to avoid Vercel's request-body limit,
+reduce upload time and free-tier storage use, strip EXIF GPS metadata, and keep the public image
+delivery path compatible with `next/image`.
+
+An abandoned form may leave an orphaned upload in the 1GB bucket; that is accepted at this
+volume, and no sweep job is part of this stage.
+
+**Rejected — upload through a server action.** Vercel's Hobby tier caps a request body at 4.5MB,
+and phone photos routinely exceed that.
+
+**Rejected — commit files to `public/`.** Each story would need a developer and a deploy, and
+`public/` is already policed by the 2MB budget test in `test/phase0/asset-budget.test.ts`.
+
+**Rejected — optimize server-side with `sharp`.** The signed-URL flow means the file never reaches
+a Vercel function, so this would need a second function purely to re-download, process, and
+re-upload the image.
+
+**Rejected — Supabase image transformations.** This is a Pro-plan feature, and D-011 pins this
+project to free tiers.
+
+**Rejected — store originals and lean on `next/image`.** That fixes delivery but not the 1GB
+storage quota or the admin's upload time.
+
+*Reverse if:* the site leaves Vercel Hobby, or storage egress becomes a free-tier problem.
+
+**Parameters (`lib/image-optimize.ts`):** long edge capped at 2400px, matching the widest hero
+image the site renders at 2× — nothing on the site needs more. WebP quality 0.82. Images already
+at or under 600KB and 2400px pass through untouched rather than losing a generation of quality to
+a needless re-encode.
+
+---
 ---
 
 # Appendix B — Architecture reference
@@ -814,6 +953,21 @@ CREATE TABLE outbox (
 );
 
 CREATE INDEX ON outbox (next_retry_at) WHERE delivered_at IS NULL;
+
+CREATE TABLE stories (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug             text NOT NULL UNIQUE,
+  title            text NOT NULL,
+  story_date       date NOT NULL,
+  cover_image_path text NOT NULL,
+  cover_image_alt  text NOT NULL,
+  body             text NOT NULL,
+  published        boolean NOT NULL DEFAULT false,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ON stories (published, story_date DESC, created_at DESC);
 ```
 
 ## Form fields
@@ -929,6 +1083,11 @@ app/
       outbox-drain/route.ts cron worker                      [Phase 2]
       triage/route.ts       Claude classification            [Phase 3]
   contact/page.tsx          mounts <InquiryForm />
+  stories/page.tsx          published story listing
+  stories/[slug]/page.tsx   published story detail
+  admin/page.tsx            content hub
+  admin/destinations/       destination CRUD
+  admin/stories/            story CRUD and signed image upload
 lib/
   inquiry/
     schema.ts                Zod — inquirySchema, InquiryIn, enums

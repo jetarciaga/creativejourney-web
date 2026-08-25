@@ -6,9 +6,11 @@ import JsonLd from "@/components/JsonLd";
 import QuoteBand from "@/components/QuoteBand";
 import Section from "@/components/Section";
 import ServiceCard from "@/components/ServiceCard";
+import StoryCard from "@/components/StoryCard";
 import TrustBar from "@/components/TrustBar";
 import { services } from "@/lib/content";
 import { listDestinations } from "@/lib/destinations";
+import { listStories } from "@/lib/stories";
 import { metadataForRoute } from "@/lib/seo";
 import { absoluteUrl, SITE } from "@/lib/site";
 
@@ -19,7 +21,10 @@ export function generateMetadata(): Metadata {
 export const revalidate = 300;
 
 export default async function Page() {
-  const destinations = await listDestinations();
+  const [destinations, stories] = await Promise.all([
+    listDestinations(),
+    listStories(),
+  ]);
   return (
     <>
       <JsonLd
@@ -62,6 +67,24 @@ export default async function Page() {
           {services.map((service) => <ServiceCard key={service.id} service={service} />)}
         </div>
       </Section>
+
+      {stories.length > 0 ? (
+        <Section
+          id="stories"
+          eyebrow="Client success stories"
+          title="Recent success stories"
+          description="A few examples of the programs we have shaped with travel agents and corporate buyers."
+        >
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {stories.slice(0, 3).map((story) => (
+              <StoryCard key={story.id} story={story} />
+            ))}
+          </div>
+          <div className="mt-8">
+            <Button href="/stories" variant="secondary">Read all stories</Button>
+          </div>
+        </Section>
+      ) : null}
 
       <Section
         id="destinations"

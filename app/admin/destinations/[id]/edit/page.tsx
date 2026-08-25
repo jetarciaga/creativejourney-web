@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import DestinationEditor from "@/components/DestinationEditor";
-import { updateDestination } from "@/app/admin/actions";
+import { updateDestination } from "@/app/admin/destinations/actions";
 import { requireAdmin } from "@/lib/authz";
 import { getAdminDestinationById } from "@/lib/destinations";
 import { isDestinationId } from "@/lib/destination-model";

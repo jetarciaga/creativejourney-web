@@ -21,6 +21,7 @@ const EXPECTED_PAGES = [
   "partners/page.tsx",
   "destinations/page.tsx",
   "destinations/[slug]/page.tsx",
+  "stories/page.tsx",
   "not-found.tsx",
 ];
 

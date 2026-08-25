@@ -1,8 +1,8 @@
-import DestinationEditor from "@/components/DestinationEditor";
-import { createDestination } from "@/app/admin/actions";
+import StoryEditor from "@/components/StoryEditor";
+import { createStory } from "@/app/admin/stories/actions";
 import { requireAdmin } from "@/lib/authz";
 
-export default async function NewDestinationPage() {
+export default async function NewStoryPage() {
   await requireAdmin();
 
   return (
@@ -11,14 +11,14 @@ export default async function NewDestinationPage() {
         <header className="max-w-prose">
           <p className="eyebrow">Admin</p>
           <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-text">
-            New destination
+            New story
           </h1>
           <p className="mt-4 text-base text-muted">
-            Add a destination to the public site. Every hero image must include descriptive alt text.
+            Add a client story with a photo, date, and a few paragraphs.
           </p>
         </header>
         <div className="mt-12">
-          <DestinationEditor action={createDestination} initialDestination={null} submitLabel="Create destination" />
+          <StoryEditor action={createStory} initialStory={null} submitLabel="Create story" />
         </div>
       </div>
     </main>

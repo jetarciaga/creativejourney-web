@@ -16,10 +16,13 @@ vi.mock("@/lib/destinations", () => ({
     },
   ]),
 }));
+vi.mock("@/lib/stories", () => ({
+  listStories: vi.fn().mockResolvedValue([]),
+}));
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 
-const EXPECTED_ROUTES = ["/", "/about", "/contact", "/privacy", "/services", "/partners", "/destinations"];
+const EXPECTED_ROUTES = ["/", "/about", "/contact", "/privacy", "/services", "/partners", "/destinations", "/stories"];
 
 describe("Phase 0 sitemap + robots (P0-6)", () => {
   it("lists every known route in the sitemap", async () => {

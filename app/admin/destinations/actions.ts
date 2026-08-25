@@ -27,7 +27,7 @@ export async function createDestination(formData: FormData) {
   const destination = await createAdminDestination(input);
 
   revalidateDestinationPaths(destination.slug);
-  redirect("/admin");
+  redirect("/admin/destinations");
 }
 
 export async function updateDestination(id: string, formData: FormData) {
@@ -46,7 +46,7 @@ export async function updateDestination(id: string, formData: FormData) {
   const destination = await updateAdminDestination(id, input);
 
   revalidateDestinationPaths(existing.slug, destination.slug);
-  redirect("/admin/" + id + "/edit");
+  redirect("/admin/destinations/" + id + "/edit");
 }
 
 export async function deleteDestination(id: string) {
@@ -59,5 +59,5 @@ export async function deleteDestination(id: string) {
 
   await deleteAdminDestination(id);
   revalidateDestinationPaths(existing.slug);
-  redirect("/admin");
+  redirect("/admin/destinations");
 }

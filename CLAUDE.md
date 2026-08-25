@@ -25,6 +25,7 @@ npm run build
 npm run lint
 npx tsc --noEmit
 npm test
+npm run test:e2e
 npm run verify:rls
 ```
 
