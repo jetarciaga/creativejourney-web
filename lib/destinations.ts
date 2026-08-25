@@ -1,6 +1,12 @@
 import "server-only";
 
 import {
+  assertImageExists,
+  createImageUploadUrl,
+  isStorageImagePath,
+  removeImage,
+} from "@/lib/image-storage";
+import {
   DESTINATION_SELECT,
   destinationFromRow,
   isDestinationId,
@@ -10,6 +16,15 @@ import {
 } from "@/lib/destination-model";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createPublicSupabaseClient } from "@/lib/supabase/public";
+
+const DESTINATION_BUCKET = "destination-images";
+const DESTINATION_IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+] as const;
+const DESTINATION_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 function throwQueryError(operation: string, error: { message: string }): never {
   throw new Error(operation + " failed: " + error.message);
@@ -92,6 +107,11 @@ export async function createAdminDestination(
   input: DestinationFormInput,
 ): Promise<Destination> {
   const supabase = createAdminSupabaseClient();
+
+  if (isStorageImagePath(input.heroImage)) {
+    await assertImageExists(DESTINATION_BUCKET, input.heroImage);
+  }
+
   const { data, error } = await supabase
     .from("destinations")
     .insert(toDestinationRow(input))
@@ -114,6 +134,24 @@ export async function updateAdminDestination(
   }
 
   const supabase = createAdminSupabaseClient();
+  const { data: existingRow, error: existingError } = await supabase
+    .from("destinations")
+    .select(DESTINATION_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (existingError) {
+    throwQueryError("Loading destination for update", existingError);
+  }
+  if (!existingRow) {
+    throw new Error("Destination not found.");
+  }
+
+  const existing = destinationFromRow(existingRow);
+  if (isStorageImagePath(input.heroImage)) {
+    await assertImageExists(DESTINATION_BUCKET, input.heroImage);
+  }
+
   const { data, error } = await supabase
     .from("destinations")
     .update(toDestinationRow(input))
@@ -125,7 +163,15 @@ export async function updateAdminDestination(
     throw new Error("Updating destination failed: " + (error?.message ?? "no row returned"));
   }
 
-  return destinationFromRow(data);
+  const updated = destinationFromRow(data);
+  if (
+    existing.heroImage !== updated.heroImage &&
+    isStorageImagePath(existing.heroImage)
+  ) {
+    await removeImage(DESTINATION_BUCKET, existing.heroImage);
+  }
+
+  return updated;
 }
 
 export async function deleteAdminDestination(id: string): Promise<void> {
@@ -134,9 +180,40 @@ export async function deleteAdminDestination(id: string): Promise<void> {
   }
 
   const supabase = createAdminSupabaseClient();
+  const { data: existingRow, error: existingError } = await supabase
+    .from("destinations")
+    .select(DESTINATION_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (existingError) {
+    throwQueryError("Loading destination for deletion", existingError);
+  }
+  if (!existingRow) {
+    throw new Error("Destination not found.");
+  }
+
+  const existing = destinationFromRow(existingRow);
   const { error } = await supabase.from("destinations").delete().eq("id", id);
 
   if (error) {
     throwQueryError("Deleting destination", error);
   }
+
+  if (isStorageImagePath(existing.heroImage)) {
+    await removeImage(DESTINATION_BUCKET, existing.heroImage);
+  }
+}
+
+export async function createDestinationImageUploadUrl(
+  contentType: string,
+  byteSize: number,
+): Promise<{ path: string; token: string }> {
+  return createImageUploadUrl(
+    DESTINATION_BUCKET,
+    contentType,
+    byteSize,
+    DESTINATION_IMAGE_MIME_TYPES,
+    DESTINATION_IMAGE_MAX_BYTES,
+  );
 }

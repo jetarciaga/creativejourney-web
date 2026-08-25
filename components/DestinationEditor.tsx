@@ -1,17 +1,41 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import { requestDestinationImageUpload } from "@/app/admin/destinations/actions";
+import Button from "@/components/Button";
+import ImageUploadField, {
+  type ImageUploadState,
+} from "@/components/ImageUploadField";
 import type { Destination } from "@/lib/destination-model";
 
 type DestinationAction = (formData: FormData) => void | Promise<void>;
 
+function SubmitButton({ label, disabled }: { label: string; disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button disabled={pending || disabled} type="submit">
+      {pending ? "Saving…" : label}
+    </Button>
+  );
+}
+
 export default function DestinationEditor({
   initialDestination,
+  initialPreviewUrl,
   action,
   submitLabel,
 }: {
   initialDestination: Destination | null;
+  initialPreviewUrl?: string;
   action: DestinationAction;
   submitLabel: string;
 }) {
+  const [imageUploadState, setImageUploadState] =
+    useState<ImageUploadState>("idle");
+
   return (
     <form action={action} className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2">
@@ -58,16 +82,16 @@ export default function DestinationEditor({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-semibold text-text">
-          Hero image path or HTTPS URL
-          <input
-            className="rounded-md border border-border bg-bg px-3 py-3 font-mono text-sm text-text"
-            defaultValue={initialDestination?.heroImage ?? ""}
-            name="heroImage"
-            placeholder="/destinations/cebu.webp"
-            required
-          />
-        </label>
+        <ImageUploadField
+          bucket="destination-images"
+          fieldName="heroImage"
+          initialPath={initialDestination?.heroImage ?? ""}
+          initialPreviewUrl={initialPreviewUrl}
+          label="Hero image"
+          onUploadStateChange={setImageUploadState}
+          requestUploadUrl={requestDestinationImageUpload}
+          uploadState={imageUploadState}
+        />
         <label className="flex flex-col gap-2 text-sm font-semibold text-text">
           Hero image alt text
           <input
@@ -152,12 +176,10 @@ export default function DestinationEditor({
       </div>
 
       <div className="flex flex-wrap gap-3 border-t border-border pt-6">
-        <button
-          className="min-h-[var(--site-tap-min)] rounded-md bg-accent-fill px-5 py-3 text-sm font-semibold !text-white transition hover:bg-green-700"
-          type="submit"
-        >
-          {submitLabel}
-        </button>
+        <SubmitButton
+          disabled={imageUploadState !== "idle"}
+          label={submitLabel}
+        />
         <Link
           className="inline-flex min-h-[var(--site-tap-min)] items-center rounded-md border border-border px-5 py-3 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
           href="/admin/destinations"

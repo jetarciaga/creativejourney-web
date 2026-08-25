@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/authz";
 import {
+  createDestinationImageUploadUrl,
   createAdminDestination,
   deleteAdminDestination,
   getAdminDestinationById,
@@ -19,6 +20,14 @@ function revalidateDestinationPaths(...slugs: string[]) {
   for (const slug of new Set(slugs.filter(Boolean))) {
     revalidatePath("/destinations/" + slug);
   }
+}
+
+export async function requestDestinationImageUpload(
+  contentType: string,
+  byteSize: number,
+): Promise<{ path: string; token: string }> {
+  await requireAdmin();
+  return createDestinationImageUploadUrl(contentType, byteSize);
 }
 
 export async function createDestination(formData: FormData) {
