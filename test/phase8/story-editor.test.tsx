@@ -2,7 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import StoryEditor from "@/components/StoryEditor";
 
-vi.mock("@/components/StoryImageField", () => ({
+vi.mock("@/app/admin/stories/actions", () => ({
+  requestStoryImageUpload: vi.fn(),
+}));
+
+vi.mock("@/components/ImageUploadField", () => ({
   default: ({
     onUploadStateChange,
   }: {

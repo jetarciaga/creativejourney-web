@@ -2,32 +2,32 @@
 
 import { useEffect } from "react";
 import {
-  prepareStoryImage,
-  STORY_IMAGE_MAX_EDGE,
+  IMAGE_MAX_EDGE,
+  prepareImageForUpload,
 } from "@/lib/image-optimize";
 
 declare global {
   interface Window {
-    __storyImageOptimizer?: {
-      prepareStoryImage: typeof prepareStoryImage;
+    __imageOptimizer?: {
+      prepareImageForUpload: typeof prepareImageForUpload;
       maxEdge: number;
     };
   }
 }
 
-export default function StoryImageTestHarness() {
+export default function ImageOptimizerTestHarness() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") {
       return;
     }
 
-    window.__storyImageOptimizer = {
-      prepareStoryImage,
-      maxEdge: STORY_IMAGE_MAX_EDGE,
+    window.__imageOptimizer = {
+      prepareImageForUpload,
+      maxEdge: IMAGE_MAX_EDGE,
     };
 
     return () => {
-      delete window.__storyImageOptimizer;
+      delete window.__imageOptimizer;
     };
   }, []);
 

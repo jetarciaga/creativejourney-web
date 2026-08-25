@@ -1,7 +1,7 @@
-export const STORY_IMAGE_MAX_EDGE = 2400;
-export const STORY_IMAGE_WEBP_QUALITY = 0.82;
+export const IMAGE_MAX_EDGE = 2400;
+export const IMAGE_WEBP_QUALITY = 0.82;
 
-const STORY_IMAGE_MAX_PASSTHROUGH_BYTES = 600 * 1024;
+const IMAGE_MAX_PASSTHROUGH_BYTES = 600 * 1024;
 
 export function targetDimensions(
   width: number,
@@ -40,8 +40,8 @@ export function shouldReencode(
   width: number,
   height: number,
 ): boolean {
-  return byteSize > STORY_IMAGE_MAX_PASSTHROUGH_BYTES ||
-    Math.max(width, height) > STORY_IMAGE_MAX_EDGE;
+  return byteSize > IMAGE_MAX_PASSTHROUGH_BYTES ||
+    Math.max(width, height) > IMAGE_MAX_EDGE;
 }
 
 function canvasToWebp(
@@ -50,7 +50,7 @@ function canvasToWebp(
   if (typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas) {
     return canvas.convertToBlob({
       type: "image/webp",
-      quality: STORY_IMAGE_WEBP_QUALITY,
+      quality: IMAGE_WEBP_QUALITY,
     });
   }
 
@@ -58,12 +58,12 @@ function canvasToWebp(
     (canvas as HTMLCanvasElement).toBlob(
       resolve,
       "image/webp",
-      STORY_IMAGE_WEBP_QUALITY,
+      IMAGE_WEBP_QUALITY,
     );
   });
 }
 
-export async function prepareStoryImage(file: File): Promise<{
+export async function prepareImageForUpload(file: File): Promise<{
   blob: Blob;
   contentType: string;
   width: number;
@@ -84,7 +84,7 @@ export async function prepareStoryImage(file: File): Promise<{
     };
   }
 
-  const dimensions = targetDimensions(width, height, STORY_IMAGE_MAX_EDGE);
+  const dimensions = targetDimensions(width, height, IMAGE_MAX_EDGE);
   const canvas: OffscreenCanvas | HTMLCanvasElement =
     typeof OffscreenCanvas !== "undefined"
       ? new OffscreenCanvas(dimensions.width, dimensions.height)

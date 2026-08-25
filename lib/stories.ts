@@ -1,11 +1,15 @@
 import "server-only";
 
 import {
+  assertImageExists,
+  createImageUploadUrl,
+  removeImage,
+} from "@/lib/image-storage";
+import {
   STORY_IMAGE_MAX_BYTES,
   STORY_IMAGE_MIME_TYPES,
   STORY_SELECT,
   isStoryId,
-  isStoryImagePath,
   slugifyTitle,
   storyFromRow,
   toStoryRow,
@@ -17,12 +21,6 @@ import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 const STORY_BUCKET = "story-images";
 const storySlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const imageExtensions: Record<(typeof STORY_IMAGE_MIME_TYPES)[number], string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/avif": "avif",
-};
 
 function throwQueryError(operation: string, error: { message: string }): never {
   throw new Error(operation + " failed: " + error.message);
@@ -121,35 +119,11 @@ async function nextStorySlug(
   throw new Error("Could not generate a unique story slug.");
 }
 
-async function assertStoryImageExists(
-  supabase: ReturnType<typeof createAdminSupabaseClient>,
-  path: string,
-) {
-  if (!isStoryImagePath(path)) {
-    throw new Error("Invalid story image path.");
-  }
-
-  const separator = path.lastIndexOf("/");
-  const folder = path.slice(0, separator);
-  const fileName = path.slice(separator + 1);
-  const { data, error } = await supabase.storage
-    .from(STORY_BUCKET)
-    .list(folder, { limit: 100, search: fileName });
-
-  if (error) {
-    throwQueryError("Checking story image", error);
-  }
-
-  if (!data?.some((file) => file.name === fileName)) {
-    throw new Error("Story image was not found in Storage.");
-  }
-}
-
 export async function createAdminStory(input: StoryFormInput): Promise<Story> {
   const supabase = createAdminSupabaseClient();
   const slug = await nextStorySlug(supabase, input.title);
 
-  await assertStoryImageExists(supabase, input.coverImagePath);
+  await assertImageExists(STORY_BUCKET, input.coverImagePath);
 
   const { data, error } = await supabase
     .from("stories")
@@ -187,7 +161,7 @@ export async function updateAdminStory(
   }
 
   const existing = storyFromRow(existingRow);
-  await assertStoryImageExists(supabase, input.coverImagePath);
+  await assertImageExists(STORY_BUCKET, input.coverImagePath);
 
   const { data, error } = await supabase
     .from("stories")
@@ -202,29 +176,14 @@ export async function updateAdminStory(
 
   const updated = storyFromRow(data);
   if (existing.coverImagePath !== updated.coverImagePath) {
-    await removeStoryImage(supabase, existing.coverImagePath);
+    await removeImage(STORY_BUCKET, existing.coverImagePath);
   }
 
   return updated;
 }
 
-async function removeStoryImage(
-  supabase: ReturnType<typeof createAdminSupabaseClient>,
-  path: string,
-) {
-  if (!isStoryImagePath(path)) {
-    throw new Error("Invalid story image path.");
-  }
-
-  const { error } = await supabase.storage.from(STORY_BUCKET).remove([path]);
-  if (error) {
-    throwQueryError("Removing story image", error);
-  }
-}
-
 export async function deleteStoryImage(path: string): Promise<void> {
-  const supabase = createAdminSupabaseClient();
-  await removeStoryImage(supabase, path);
+  await removeImage(STORY_BUCKET, path);
 }
 
 export async function deleteAdminStory(id: string): Promise<void> {
@@ -253,34 +212,18 @@ export async function deleteAdminStory(id: string): Promise<void> {
     throwQueryError("Deleting story", error);
   }
 
-  await removeStoryImage(supabase, existing.coverImagePath);
+  await removeImage(STORY_BUCKET, existing.coverImagePath);
 }
 
 export async function createStoryImageUploadUrl(
   contentType: string,
   byteSize: number,
 ): Promise<{ path: string; token: string }> {
-  if (!(STORY_IMAGE_MIME_TYPES as readonly string[]).includes(contentType)) {
-    throw new Error("Unsupported story image MIME type.");
-  }
-
-  if (!Number.isInteger(byteSize) || byteSize <= 0 || byteSize > STORY_IMAGE_MAX_BYTES) {
-    throw new Error("Story image size must be between 1 byte and 10MB.");
-  }
-
-  const extension = imageExtensions[contentType as (typeof STORY_IMAGE_MIME_TYPES)[number]];
-  const year = new Date().getUTCFullYear();
-  const path = `${year}/${crypto.randomUUID()}.${extension}`;
-  const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase.storage
-    .from(STORY_BUCKET)
-    .createSignedUploadUrl(path);
-
-  if (error || !data?.token) {
-    throw new Error(
-      "Creating story image upload URL failed: " + (error?.message ?? "no token returned"),
-    );
-  }
-
-  return { path, token: data.token };
+  return createImageUploadUrl(
+    STORY_BUCKET,
+    contentType,
+    byteSize,
+    STORY_IMAGE_MIME_TYPES,
+    STORY_IMAGE_MAX_BYTES,
+  );
 }
