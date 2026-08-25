@@ -41,6 +41,7 @@ export default function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-ink-100">
             <li><Link className="transition hover:text-green-400" href="/about">About us</Link></li>
             <li><Link className="transition hover:text-green-400" href="/services">Services</Link></li>
+            <li><Link className="transition hover:text-green-400" href="/stories">Stories</Link></li>
             <li><Link className="transition hover:text-green-400" href="/partners">Travel partners</Link></li>
             <li><Link className="transition hover:text-green-400" href="/privacy">Privacy policy</Link></li>
           </ul>

@@ -83,6 +83,11 @@ export const routeMetadata: Record<string, RouteMeta> = {
     "Destinations — " + TITLE_SUFFIX,
     "Explore Cebu, Bohol, Boracay, and the destinations Creative Journeys can shape into a thoughtful travel program.",
   ),
+  "/stories": buildRouteMeta(
+    "/stories",
+    "Client Success Stories — " + TITLE_SUFFIX,
+    "Client success stories from Creative Journeys Travel PH, a Philippine wholesaler for FIT, GIT, and MICE travel programs.",
+  ),
   "/services/fit": buildRouteMeta(
     "/services/fit",
     `FIT — Free Independent Traveler Packages — ${TITLE_SUFFIX}`,

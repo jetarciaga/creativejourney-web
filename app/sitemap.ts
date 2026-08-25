@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listDestinations } from "@/lib/destinations";
+import { listStories } from "@/lib/stories";
 import { absoluteUrl } from "@/lib/site";
 import { routeMetadata } from "@/lib/seo";
 
@@ -24,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const destinations = await listDestinations();
+  const stories = await listStories();
   return [
     ...staticEntries,
     ...destinations.map((destination) => ({
@@ -31,6 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(destination.updatedAt),
       changeFrequency: "monthly" as const,
       priority: destination.featured ? 0.8 : 0.6,
+    })),
+    ...stories.map((story) => ({
+      url: absoluteUrl("/stories/" + story.slug),
+      lastModified: new Date(story.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
   ];
 }

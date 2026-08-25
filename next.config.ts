@@ -1,8 +1,21 @@
 import type { NextConfig } from "next";
 
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : undefined;
+
 const nextConfig: NextConfig = {
-  // Placeholder — extended in later stages (image domains for Supabase
-  // storage in Stage 5, redirects if any legacy Vite routes need one).
+  images: supabaseHost
+    ? {
+        remotePatterns: [
+          {
+            protocol: "https",
+            hostname: supabaseHost,
+            pathname: "/storage/v1/object/public/story-images/**",
+          },
+        ],
+      }
+    : undefined,
 };
 
 export default nextConfig;

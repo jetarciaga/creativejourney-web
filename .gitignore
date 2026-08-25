@@ -43,3 +43,6 @@ htmlcov/
 .claude/settings.local.json
 .vercel
 .env*
+test-results/
+playwright-report/
+/playwright/.cache/
