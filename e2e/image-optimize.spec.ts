@@ -10,7 +10,7 @@ type OptimizerResult = {
 };
 
 type BrowserOptimizer = {
-  prepareStoryImage(file: File): Promise<OptimizerResult>;
+  prepareImageForUpload(file: File): Promise<OptimizerResult>;
   maxEdge: number;
 };
 
@@ -18,20 +18,20 @@ async function openOptimizerPage(page: Page) {
   await page.goto("/dev/image-optimizer");
   await page.waitForFunction(() =>
     Boolean(
-      (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer,
+      (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer,
     ),
   );
 }
 
-test.describe("story image optimizer", () => {
+test.describe("image optimizer", () => {
   test("downscales and re-encodes a large landscape image", async ({ page }) => {
     await openOptimizerPage(page);
 
     const result = await page.evaluate(async () => {
-      const optimizer = (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer;
-      if (!optimizer) throw new Error("The story image optimizer bridge is missing.");
+      const optimizer = (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer;
+      if (!optimizer) throw new Error("The image optimizer bridge is missing.");
       const inputCanvas = document.createElement("canvas");
       inputCanvas.width = 4032;
       inputCanvas.height = 3024;
@@ -55,7 +55,7 @@ test.describe("story image optimizer", () => {
         inputCanvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Fixture failed."))), "image/jpeg", 0.95);
       });
       const input = new File([inputBlob], "large-fixture.jpg", { type: "image/jpeg" });
-      const output = await optimizer.prepareStoryImage(input);
+      const output = await optimizer.prepareImageForUpload(input);
       const bitmap = await createImageBitmap(output.blob);
 
       return {
@@ -82,9 +82,9 @@ test.describe("story image optimizer", () => {
     await openOptimizerPage(page);
 
     const result = await page.evaluate(async () => {
-      const optimizer = (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer;
-      if (!optimizer) throw new Error("The story image optimizer bridge is missing.");
+      const optimizer = (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer;
+      if (!optimizer) throw new Error("The image optimizer bridge is missing.");
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
       canvas.height = 900;
@@ -98,7 +98,7 @@ test.describe("story image optimizer", () => {
       });
       const inputBytes = Array.from(new Uint8Array(await inputBlob.arrayBuffer()));
       const input = new File([inputBlob], "small-fixture.png", { type: "image/png" });
-      const output = await optimizer.prepareStoryImage(input);
+      const output = await optimizer.prepareImageForUpload(input);
       const outputBytes = Array.from(new Uint8Array(await output.blob.arrayBuffer()));
 
       return {
@@ -123,13 +123,13 @@ test.describe("story image optimizer", () => {
     );
 
     const result = await page.evaluate(async (fixtureBytes) => {
-      const optimizer = (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer;
-      if (!optimizer) throw new Error("The story image optimizer bridge is missing.");
+      const optimizer = (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer;
+      if (!optimizer) throw new Error("The image optimizer bridge is missing.");
       const input = new File([new Uint8Array(fixtureBytes)], "orientation-6.jpg", {
         type: "image/jpeg",
       });
-      const output = await optimizer.prepareStoryImage(input);
+      const output = await optimizer.prepareImageForUpload(input);
       return {
         contentType: output.contentType,
         width: output.width,
@@ -150,15 +150,15 @@ test.describe("story image optimizer", () => {
     );
 
     const result = await page.evaluate(async (fixtureBytes) => {
-      const optimizer = (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer;
-      if (!optimizer) throw new Error("The story image optimizer bridge is missing.");
+      const optimizer = (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer;
+      if (!optimizer) throw new Error("The image optimizer bridge is missing.");
       const input = new File(
         [new Uint8Array(fixtureBytes)],
         "orientation-6-large.jpg",
         { type: "image/jpeg" },
       );
-      const output = await optimizer.prepareStoryImage(input);
+      const output = await optimizer.prepareImageForUpload(input);
       return {
         contentType: output.contentType,
         width: output.width,
@@ -176,9 +176,9 @@ test.describe("story image optimizer", () => {
     await openOptimizerPage(page);
 
     const result = await page.evaluate(async () => {
-      const optimizer = (window as unknown as { __storyImageOptimizer?: BrowserOptimizer })
-        .__storyImageOptimizer;
-      if (!optimizer) throw new Error("The story image optimizer bridge is missing.");
+      const optimizer = (window as unknown as { __imageOptimizer?: BrowserOptimizer })
+        .__imageOptimizer;
+      if (!optimizer) throw new Error("The image optimizer bridge is missing.");
       const canvas = document.createElement("canvas");
       canvas.width = 400;
       canvas.height = 300;
@@ -189,7 +189,7 @@ test.describe("story image optimizer", () => {
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((value) => (value ? resolve(value) : reject(new Error("Fixture failed."))), "image/jpeg");
       });
-      const output = await optimizer.prepareStoryImage(
+      const output = await optimizer.prepareImageForUpload(
         new File([blob], "small.jpg", { type: "image/jpeg" }),
       );
       return { width: output.width, height: output.height };

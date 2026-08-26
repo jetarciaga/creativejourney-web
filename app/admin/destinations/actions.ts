@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/authz";
 import {
+  createDestinationImageUploadUrl,
   createAdminDestination,
   deleteAdminDestination,
   getAdminDestinationById,
@@ -27,6 +28,14 @@ function actionError(error: unknown, fallback: string): DestinationActionState {
   return {
     error: error instanceof Error ? error.message : fallback,
   };
+}
+
+export async function requestDestinationImageUpload(
+  contentType: string,
+  byteSize: number,
+): Promise<{ path: string; token: string }> {
+  await requireAdmin();
+  return createDestinationImageUploadUrl(contentType, byteSize);
 }
 
 export async function createDestination(

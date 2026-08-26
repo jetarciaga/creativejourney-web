@@ -3,15 +3,21 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import Card from "@/components/Card";
 import Icon from "@/components/Icon";
-import type { Destination } from "@/lib/destination-model";
+import {
+  destinationImageUrl,
+  isStorageImagePath,
+  type Destination,
+} from "@/lib/destination-model";
 
 export default function DestinationCard({ destination }: { destination: Destination }) {
+  const storageImage = isStorageImagePath(destination.heroImage);
+
   return (
     <Card className="group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-site-strong">
       <div className="relative aspect-[4/3] overflow-hidden">
-        {destination.heroImage.startsWith("/") ? (
+        {destination.heroImage.startsWith("/") || storageImage ? (
           <Image
-            src={destination.heroImage}
+            src={storageImage ? destinationImageUrl(destination.heroImage) : destination.heroImage}
             alt={destination.heroImageAlt}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"

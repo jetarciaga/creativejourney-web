@@ -9,12 +9,22 @@ import Container from "@/components/Container";
 import Icon from "@/components/Icon";
 import PageHeader from "@/components/PageHeader";
 import Section from "@/components/Section";
+import {
+  destinationImageUrl,
+  isStorageImagePath,
+} from "@/lib/destination-model";
 import { getDestinationBySlug, listDestinations } from "@/lib/destinations";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 300;
 
 const getCachedDestination = cache((slug: string) => getDestinationBySlug(slug));
+
+function destinationHeroImageUrl(heroImage: string): string {
+  return isStorageImagePath(heroImage)
+    ? destinationImageUrl(heroImage)
+    : absoluteUrl(heroImage);
+}
 
 export async function generateStaticParams() {
   const destinations = await listDestinations();
@@ -35,6 +45,7 @@ export async function generateMetadata({
 
   const title = destination.name + " — Creative Journeys Travel PH";
   const url = absoluteUrl("/destinations/" + destination.slug);
+  const imageUrl = destinationHeroImageUrl(destination.heroImage);
 
   return {
     title,
@@ -45,13 +56,13 @@ export async function generateMetadata({
       title,
       description: destination.summary,
       url,
-      images: [{ url: absoluteUrl(destination.heroImage) }],
+      images: [{ url: imageUrl }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: destination.summary,
-      images: [absoluteUrl(destination.heroImage)],
+      images: [imageUrl],
     },
   };
 }
@@ -88,9 +99,14 @@ export default async function DestinationDetailPage({
       <section className="py-12 sm:py-16">
         <Container>
           <div className="relative aspect-[16/8] overflow-hidden rounded-card border border-border bg-surface shadow-site">
-            {destination.heroImage.startsWith("/") ? (
+            {destination.heroImage.startsWith("/") ||
+            isStorageImagePath(destination.heroImage) ? (
               <Image
-                src={destination.heroImage}
+                src={
+                  isStorageImagePath(destination.heroImage)
+                    ? destinationImageUrl(destination.heroImage)
+                    : destination.heroImage
+                }
                 alt={destination.heroImageAlt}
                 fill
                 priority

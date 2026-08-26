@@ -1,3 +1,24 @@
+import {
+  isStorageImagePath,
+  storageImageUrl,
+} from "@/lib/image-storage";
+import {
+  DESTINATION_DESCRIPTION_MAX_CHARS,
+  DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_MAX_CHARS,
+  DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+  DESTINATION_LIST_ITEM_MAX_CHARS,
+  DESTINATION_LIST_MAX_CHARS,
+  DESTINATION_LIST_MAX_ITEMS,
+  DESTINATION_NAME_MAX_CHARS,
+  DESTINATION_REGION_MAX_CHARS,
+  DESTINATION_SLUG_MAX_CHARS,
+  DESTINATION_SUMMARY_MAX_CHARS,
+} from "@/lib/destination-limits";
+
+export { isStorageImagePath };
+
 export type Destination = {
   id: string;
   slug: string;
@@ -34,18 +55,20 @@ export type DestinationFormInput = {
 export const DESTINATION_SELECT =
   "id, slug, name, region, hero_image, hero_image_alt, summary, description, highlights, suitable_for, featured, display_order, inquiry_destination_value, created_at, updated_at";
 
-export const DESTINATION_SLUG_MAX_CHARS = 120;
-export const DESTINATION_NAME_MAX_CHARS = 120;
-export const DESTINATION_REGION_MAX_CHARS = 120;
-export const DESTINATION_HERO_IMAGE_MAX_CHARS = 500;
-export const DESTINATION_HERO_IMAGE_ALT_MAX_CHARS = 300;
-export const DESTINATION_SUMMARY_MAX_CHARS = 500;
-export const DESTINATION_DESCRIPTION_MAX_CHARS = 5000;
-export const DESTINATION_LIST_MAX_CHARS = 4000;
-export const DESTINATION_LIST_MAX_ITEMS = 20;
-export const DESTINATION_LIST_ITEM_MAX_CHARS = 160;
-export const DESTINATION_DISPLAY_ORDER_MAX_CHARS = 10;
-export const DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS = 120;
+export {
+  DESTINATION_DESCRIPTION_MAX_CHARS,
+  DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_MAX_CHARS,
+  DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+  DESTINATION_LIST_ITEM_MAX_CHARS,
+  DESTINATION_LIST_MAX_CHARS,
+  DESTINATION_LIST_MAX_ITEMS,
+  DESTINATION_NAME_MAX_CHARS,
+  DESTINATION_REGION_MAX_CHARS,
+  DESTINATION_SLUG_MAX_CHARS,
+  DESTINATION_SUMMARY_MAX_CHARS,
+} from "@/lib/destination-limits";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const destinationIdPattern =
@@ -181,8 +204,10 @@ export function parseDestinationForm(formData: FormData): DestinationFormInput {
     "heroImage",
     DESTINATION_HERO_IMAGE_MAX_CHARS,
   );
-  if (!/^(?:\/|https:\/\/)/.test(heroImage)) {
-    throw new Error("heroImage must be a local path or an HTTPS URL.");
+  if (!heroImage.startsWith("/") && !isStorageImagePath(heroImage)) {
+    throw new Error(
+      "heroImage must be a local path or a validated Storage image path.",
+    );
   }
 
   const displayOrderText = formText(
@@ -229,6 +254,10 @@ export function parseDestinationForm(formData: FormData): DestinationFormInput {
       DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
     ),
   };
+}
+
+export function destinationImageUrl(path: string): string {
+  return storageImageUrl("destination-images", path);
 }
 
 export function toDestinationRow(input: DestinationFormInput) {

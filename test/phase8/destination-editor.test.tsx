@@ -2,6 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import DestinationEditor from "@/components/DestinationEditor";
 
+vi.mock("@/app/admin/destinations/actions", () => ({
+  requestDestinationImageUpload: vi.fn(),
+}));
+
 describe("DestinationEditor", () => {
   it("blocks submit for an over-length list item and re-enables it after fixing the item", () => {
     const action = vi.fn();

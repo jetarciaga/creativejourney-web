@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { requestDestinationImageUpload } from "@/app/admin/destinations/actions";
+import Button from "@/components/Button";
+import ImageUploadField, {
+  type ImageUploadState,
+} from "@/components/ImageUploadField";
 import {
   DESTINATION_DESCRIPTION_MAX_CHARS,
   DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
-  DESTINATION_HERO_IMAGE_MAX_CHARS,
   DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
   DESTINATION_LIST_ITEM_MAX_CHARS,
   DESTINATION_LIST_MAX_CHARS,
@@ -14,8 +18,8 @@ import {
   DESTINATION_REGION_MAX_CHARS,
   DESTINATION_SLUG_MAX_CHARS,
   DESTINATION_SUMMARY_MAX_CHARS,
-  type Destination,
-} from "@/lib/destination-model";
+} from "@/lib/destination-limits";
+import type { Destination } from "@/lib/destination-model";
 
 type DestinationActionState = { error: string };
 type DestinationAction = (
@@ -65,14 +69,18 @@ function listStatus(check: ListCheck) {
 
 export default function DestinationEditor({
   initialDestination,
+  initialPreviewUrl,
   action,
   submitLabel,
 }: {
   initialDestination: Destination | null;
+  initialPreviewUrl?: string;
   action: DestinationAction;
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: "" });
+  const [imageUploadState, setImageUploadState] =
+    useState<ImageUploadState>("idle");
   const [listValues, setListValues] = useState<Record<ListField, string>>({
     highlights: initialDestination?.highlights.join("\n") ?? "",
     suitableFor: initialDestination?.suitableFor.join(", ") ?? "",
@@ -141,17 +149,16 @@ export default function DestinationEditor({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-semibold text-text">
-          Hero image path or HTTPS URL
-          <input
-            className="rounded-md border border-border bg-bg px-3 py-3 font-mono text-sm text-text"
-            defaultValue={initialDestination?.heroImage ?? ""}
-            maxLength={DESTINATION_HERO_IMAGE_MAX_CHARS}
-            name="heroImage"
-            placeholder="/destinations/cebu.webp"
-            required
-          />
-        </label>
+        <ImageUploadField
+          bucket="destination-images"
+          fieldName="heroImage"
+          initialPath={initialDestination?.heroImage ?? ""}
+          initialPreviewUrl={initialPreviewUrl}
+          label="Hero image"
+          onUploadStateChange={setImageUploadState}
+          requestUploadUrl={requestDestinationImageUpload}
+          uploadState={imageUploadState}
+        />
         <label className="flex flex-col gap-2 text-sm font-semibold text-text">
           Hero image alt text
           <input
@@ -269,13 +276,14 @@ export default function DestinationEditor({
       ) : null}
 
       <div className="flex flex-wrap gap-3 border-t border-border pt-6">
-        <button
-          className="min-h-[var(--site-tap-min)] rounded-md bg-accent-fill px-5 py-3 text-sm font-semibold !text-white transition hover:bg-green-700"
-          disabled={pending || hasListError}
+        <Button
+          disabled={
+            pending || imageUploadState !== "idle" || hasListError
+          }
           type="submit"
         >
           {pending ? "Saving…" : submitLabel}
-        </button>
+        </Button>
         <Link
           className="inline-flex min-h-[var(--site-tap-min)] items-center rounded-md border border-border px-5 py-3 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
           href="/admin/destinations"

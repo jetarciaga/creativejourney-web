@@ -318,12 +318,29 @@ photo plus a draft state that is enforced by RLS rather than only by the UI.
 - `migrations/006_stories.sql` restricts public reads to `published = true`, and
   `migrations/007_story-images-bucket.sql` creates a public read-only bucket with the four-image
   MIME allow-list.
+- The shared optimizer, signed-upload, and Storage cleanup pipeline also powers destination hero
+  photos through `migrations/008_destination-images-bucket.sql`; destination editing is
+  upload-only, while the three legacy local-asset paths remain valid and are never sent to
+  Storage for deletion.
 - Stories support stable generated slugs, draft/published states, required alt text, signed
   uploads, old-image cleanup, and public `/stories` plus `/stories/[slug]` pages.
 - Browser optimization handles EXIF orientation, 2400px downscaling, pass-through, and no
   upscaling; the only Playwright coverage is `e2e/image-optimize.spec.ts`.
 - `npm run build`, `npm run lint`, `npx tsc --noEmit`, `npm test`, and `npm run test:e2e` pass
   without applying migrations or running `npm run verify:rls`.
+
+### Destination hero image extension
+
+The destination photo workflow reuses D-012's existing decision rather than introducing a new
+decision record. The story-specific optimizer and Storage helpers were generalized into
+`prepareImageForUpload`, `lib/image-storage.ts`, and `ImageUploadField`; destinations use the
+same 2400px/WebP browser processing, signed upload URL flow, public bucket shape, and guarded
+old-image cleanup. The destination editor no longer accepts a manually pasted HTTPS URL: it is
+upload-only, with existing `/destinations/*.webp` paths retained for backwards compatibility.
+
+`migrations/008_destination-images-bucket.sql` and its anonymous-upload RLS probe are ready to
+apply, but the live migration and end-to-end destination upload still require the maintainer's
+Supabase credentials.
 
 ### Verified 2026-08-25
 
@@ -358,14 +375,14 @@ sent back and fixed — not implementation nitpicks:
    inlines `NEXT_PUBLIC_*` values into the client bundle when it can statically see the literal
    `process.env.NEXT_PUBLIC_X` reference at build time; every existing call site was server-side,
    where real `process.env` supports dynamic lookup, so this had never surfaced. The first
-   client-side caller — the browser upload in `StoryImageField.tsx` — hit it immediately with
+   client-side caller — the browser upload in `ImageUploadField.tsx` — hit it immediately with
    "Missing required public environment variable," even though the variable was set. Fixed by
    referencing both variables as static literals instead of through a name-parameterized helper.
    Worth remembering as a general trap: any future client-side env access in this codebase needs
    the same static-literal treatment, not the dynamic-lookup pattern the server-only code uses.
 2. **Submit-during-upload race.** The Save/Create button wasn't disabled while a cover-photo
    upload was still in flight. `SubmitButton` used `useFormStatus()`, which only reflects the
-   form's own submission state — it had no visibility into `StoryImageField`'s separate async
+   form's own submission state — it had no visibility into `ImageUploadField`'s separate async
    upload state. Submitting mid-upload silently saved the *previous* photo's path on edit (no
    error at all — just the wrong photo) and failed loudly on create (empty path rejected by
    validation). Reproduced directly by uploading a large photo and submitting immediately, then
@@ -790,6 +807,10 @@ from scratch.
 they are uploaded to a public `story-images` Supabase Storage bucket through a signed upload URL.
 The story row stores the validated object path, not a public URL. Small, in-bounds images may pass
 through untouched; the server still validates the processed MIME type and byte size.
+
+The same decision now governs destination hero photos in the `destination-images` bucket. Their
+editor is upload-only; legacy local asset paths remain accepted for the existing destinations,
+but new external HTTPS URLs are not stored or hot-linked.
 
 **Why:** The admin works from a phone, so the upload needs to avoid Vercel's request-body limit,
 reduce upload time and free-tier storage use, strip EXIF GPS metadata, and keep the public image

@@ -15,6 +15,7 @@ import {
   DESTINATION_SLUG_MAX_CHARS,
   DESTINATION_SUMMARY_MAX_CHARS,
   destinationFromRow,
+  destinationImageUrl,
   parseDestinationForm,
 } from "@/lib/destination-model";
 
@@ -83,6 +84,35 @@ describe("destinations data contract", () => {
       featured: true,
       displayOrder: 1,
     });
+  });
+
+  it("accepts local and Storage image paths but rejects bare HTTPS URLs", () => {
+    expect(parseDestinationForm(validFormData()).heroImage).toBe(
+      "/destinations/cebu.webp",
+    );
+
+    const storageImage = validFormData();
+    storageImage.set(
+      "heroImage",
+      "2026/22222222-2222-4222-8222-222222222222.webp",
+    );
+    expect(parseDestinationForm(storageImage).heroImage).toBe(
+      "2026/22222222-2222-4222-8222-222222222222.webp",
+    );
+
+    const externalImage = validFormData();
+    externalImage.set("heroImage", "https://images.example/cebu.webp");
+    expect(() => parseDestinationForm(externalImage)).toThrow(/heroImage/);
+  });
+
+  it("composes the public Storage URL for an uploaded destination image", () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co/";
+
+    expect(
+      destinationImageUrl("2026/22222222-2222-4222-8222-222222222222.webp"),
+    ).toBe(
+      "https://example.supabase.co/storage/v1/object/public/destination-images/2026/22222222-2222-4222-8222-222222222222.webp",
+    );
   });
 
   it("rejects a missing hero image alt in both form and database row", () => {

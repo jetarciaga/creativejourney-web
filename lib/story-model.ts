@@ -1,3 +1,8 @@
+import {
+  isStorageImagePath,
+  storageImageUrl,
+} from "@/lib/image-storage";
+
 export type Story = {
   id: string;
   slug: string;
@@ -38,15 +43,13 @@ export const STORY_IMAGE_ALT_MAX_CHARS = 300;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const storyIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const storyImagePathPattern =
-  /^\d{4}\/[0-9a-f-]{36}\.(jpe?g|png|webp|avif)$/;
 
 export function isStoryId(value: unknown): value is string {
   return typeof value === "string" && storyIdPattern.test(value);
 }
 
 export function isStoryImagePath(value: unknown): value is string {
-  return typeof value === "string" && storyImagePathPattern.test(value);
+  return isStorageImagePath(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -195,18 +198,5 @@ export function storyExcerpt(body: string, maximum = 180): string {
 }
 
 export function storyImageUrl(path: string): string {
-  if (!isStoryImagePath(path)) {
-    throw new Error("Invalid story image path.");
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!baseUrl) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL.");
-  }
-
-  return (
-    baseUrl.replace(/\/+$/, "") +
-    "/storage/v1/object/public/story-images/" +
-    path
-  );
+  return storageImageUrl("story-images", path);
 }

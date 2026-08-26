@@ -132,6 +132,26 @@ if (!storyUploadError) {
   throw new Error("RLS failure: an anonymous story image upload was accepted.");
 }
 
+const destinationImageProbePath = "__anonymous-destination-upload-probe__/probe.jpg";
+const { error: destinationUploadError } = await anonymous.storage
+  .from("destination-images")
+  .upload(
+    destinationImageProbePath,
+    new Blob([new Uint8Array([255, 216, 255, 217])], { type: "image/jpeg" }),
+  );
+
+if (!destinationUploadError) {
+  const admin = createClient(url, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  });
+  await admin.storage.from("destination-images").remove([destinationImageProbePath]);
+  throw new Error("RLS failure: an anonymous destination image upload was accepted.");
+}
+
 console.log(
   JSON.stringify(
     {
@@ -145,6 +165,9 @@ console.log(
       storyWriteRejectedCode: storyWriteError.code ?? null,
       anonymousStoryUpload: "rejected",
       storyUploadRejectedCode: storyUploadError.name ?? storyUploadError.code ?? null,
+      anonymousDestinationImageUpload: "rejected",
+      destinationUploadRejectedCode:
+        destinationUploadError.name ?? destinationUploadError.code ?? null,
     },
     null,
     2,
