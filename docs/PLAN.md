@@ -12,6 +12,10 @@
 
 **Merged and live, through Stage 7 plus the destination and hydration follow-up fixes.** PR #9 (Stages 0–4.6) merged at `eb8fb90`. PR #10 (Stage 5) merged at `d67e560`. PR #11 (Stage 6, inquiry form) merged at `23b8416`. PR #12 (free-text destination fix) merged at `863506c`. **PR #13 (header logo hydration fix) merged at `39bc942`, commit `dae6e7a`. PR #14 (Stage 7 cleanup) merged at `0ba4ca7`, commit `dcfe9aa`.** All confirmed directly via `gh pr view` against the correct repo (`jetarciaga/creativejourney-web` — a Codex report momentarily typo'd the URL as `creativejourneysph.com`, caught and corrected before it mattered).
 
+**Admin action error visibility follow-up (2026-08-26):** The verified fix is committed on
+`fix/admin-action-error-visibility`, which already incorporates current `main`; the branch is
+not yet merged back to `main`.
+
 **Housekeeping note:** PR #14's merge commit reads `"Merge pull request #14 from jetarciaga/fix/header-logo-hydration"` — the Stage 7 cleanup commit (`dcfe9aa`) was made on top of the same branch as the hydration fix (`fix/header-logo-hydration`) rather than a fresh branch off `main`, despite the instruction to create `chore/stage7-cleanup`. Not a functional problem — both changes are present and correct on `main` in the right order — just a git-hygiene deviation worth knowing about if the history ever needs archaeology. `remotes/origin/feature/inquiry-form` is also still un-deleted from Stage 6, same low-priority cleanup item as before.
 
 **Both fixes independently verified against production, not just the reports:**
@@ -843,6 +847,29 @@ at or under 600KB and 2400px pass through untouched rather than losing a generat
 a needless re-encode.
 
 ---
+
+## D-013 · Admin form validation errors return through Server Action state
+
+**Decided 2026-08-26:** Admin create/update Server Actions return validation and persistence
+failures as `{ error }` values, and their forms wrap those actions with React's `useActionState`
+so the error is rendered in the form. This applies to the actions in
+`app/admin/destinations/actions.ts` and `app/admin/stories/actions.ts`; unexpected failures,
+including throw-based delete races, are caught by `app/admin/error.tsx`. Shared destination
+limits remain defined in `lib/destination-limits.ts`.
+
+**Why:** A `suitableFor` validation error only reached server logs and never the admin. Nothing
+in the admin forms caught Server Action errors, and there was no `error.tsx` anywhere under
+`app/`, leaving the same silent-failure gap for every other validation rule.
+
+**Rejected — only adding client-side character limits.** Shared limits in
+`lib/destination-limits.ts` improve prevention, but that would only narrow which specific
+errors go silent; any other validation rule would still hit the missing Server Action return
+path.
+
+*Reverse if:* the admin forms move away from Server Actions or adopt an equivalent typed,
+user-visible error channel; until then, new admin create/update forms follow this pattern.
+
+---
 ---
 
 # Appendix B — Architecture reference
@@ -1147,6 +1174,10 @@ error`.
 - On success, replace the form with the reference code and an expected-reply-time message.
 - On field errors, focus the first invalid input and announce via `aria-live`.
 - Read `?destination=` on mount to prefill.
+- Admin create/update forms wrap their Server Action with React's `useActionState` and render
+  `state?.error` with `role="alert"`; validation failures are returned values, while unexpected
+  failures reach `app/admin/error.tsx`. Follow the existing inline `error` + `role="alert"`
+  pattern in `components/ImageUploadField.tsx`.
 
 ## CI/CD
 

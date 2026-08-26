@@ -23,16 +23,45 @@ function revalidateStoryPaths(...slugs: string[]) {
   }
 }
 
-export async function createStory(formData: FormData) {
+type StoryActionState = { error: string };
+
+function actionError(error: unknown, fallback: string): StoryActionState {
+  return {
+    error: error instanceof Error ? error.message : fallback,
+  };
+}
+
+export async function createStory(
+  prevState: StoryActionState,
+  formData: FormData,
+): Promise<StoryActionState> {
+  void prevState;
   await requireAdmin();
-  const input = parseStoryForm(formData);
-  const story = await createAdminStory(input);
+
+  let input: ReturnType<typeof parseStoryForm>;
+  try {
+    input = parseStoryForm(formData);
+  } catch (error) {
+    return actionError(error, "The story details could not be validated.");
+  }
+
+  let story: Awaited<ReturnType<typeof createAdminStory>>;
+  try {
+    story = await createAdminStory(input);
+  } catch (error) {
+    return actionError(error, "The story could not be saved.");
+  }
 
   revalidateStoryPaths(story.slug);
   redirect("/admin/stories");
 }
 
-export async function updateStory(id: string, formData: FormData) {
+export async function updateStory(
+  id: string,
+  prevState: StoryActionState,
+  formData: FormData,
+): Promise<StoryActionState> {
+  void prevState;
   await requireAdmin();
 
   if (!isStoryId(id)) {
@@ -44,8 +73,19 @@ export async function updateStory(id: string, formData: FormData) {
     throw new Error("Story not found.");
   }
 
-  const input = parseStoryForm(formData);
-  const story = await updateAdminStory(id, input);
+  let input: ReturnType<typeof parseStoryForm>;
+  try {
+    input = parseStoryForm(formData);
+  } catch (error) {
+    return actionError(error, "The story details could not be validated.");
+  }
+
+  let story: Awaited<ReturnType<typeof updateAdminStory>>;
+  try {
+    story = await updateAdminStory(id, input);
+  } catch (error) {
+    return actionError(error, "The story could not be saved.");
+  }
 
   revalidateStoryPaths(existing.slug, story.slug);
   redirect("/admin/stories/" + id + "/edit");

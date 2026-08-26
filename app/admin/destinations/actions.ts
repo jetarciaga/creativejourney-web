@@ -22,6 +22,14 @@ function revalidateDestinationPaths(...slugs: string[]) {
   }
 }
 
+type DestinationActionState = { error: string };
+
+function actionError(error: unknown, fallback: string): DestinationActionState {
+  return {
+    error: error instanceof Error ? error.message : fallback,
+  };
+}
+
 export async function requestDestinationImageUpload(
   contentType: string,
   byteSize: number,
@@ -30,16 +38,37 @@ export async function requestDestinationImageUpload(
   return createDestinationImageUploadUrl(contentType, byteSize);
 }
 
-export async function createDestination(formData: FormData) {
+export async function createDestination(
+  prevState: DestinationActionState,
+  formData: FormData,
+): Promise<DestinationActionState> {
+  void prevState;
   await requireAdmin();
-  const input = parseDestinationForm(formData);
-  const destination = await createAdminDestination(input);
+
+  let input: ReturnType<typeof parseDestinationForm>;
+  try {
+    input = parseDestinationForm(formData);
+  } catch (error) {
+    return actionError(error, "The destination details could not be validated.");
+  }
+
+  let destination: Awaited<ReturnType<typeof createAdminDestination>>;
+  try {
+    destination = await createAdminDestination(input);
+  } catch (error) {
+    return actionError(error, "The destination could not be saved.");
+  }
 
   revalidateDestinationPaths(destination.slug);
   redirect("/admin/destinations");
 }
 
-export async function updateDestination(id: string, formData: FormData) {
+export async function updateDestination(
+  id: string,
+  prevState: DestinationActionState,
+  formData: FormData,
+): Promise<DestinationActionState> {
+  void prevState;
   await requireAdmin();
 
   if (!isDestinationId(id)) {
@@ -51,8 +80,19 @@ export async function updateDestination(id: string, formData: FormData) {
     throw new Error("Destination not found.");
   }
 
-  const input = parseDestinationForm(formData);
-  const destination = await updateAdminDestination(id, input);
+  let input: ReturnType<typeof parseDestinationForm>;
+  try {
+    input = parseDestinationForm(formData);
+  } catch (error) {
+    return actionError(error, "The destination details could not be validated.");
+  }
+
+  let destination: Awaited<ReturnType<typeof updateAdminDestination>>;
+  try {
+    destination = await updateAdminDestination(id, input);
+  } catch (error) {
+    return actionError(error, "The destination could not be saved.");
+  }
 
   revalidateDestinationPaths(existing.slug, destination.slug);
   redirect("/admin/destinations/" + id + "/edit");

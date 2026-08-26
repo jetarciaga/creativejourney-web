@@ -23,7 +23,7 @@ vi.mock("@/components/ImageUploadField", () => ({
 
 describe("StoryEditor", () => {
   it("blocks submit while the cover photo is uploading", () => {
-    const action = vi.fn();
+    const action = vi.fn(async () => ({ error: "" }));
 
     render(
       <StoryEditor

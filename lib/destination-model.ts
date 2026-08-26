@@ -2,6 +2,20 @@ import {
   isStorageImagePath,
   storageImageUrl,
 } from "@/lib/image-storage";
+import {
+  DESTINATION_DESCRIPTION_MAX_CHARS,
+  DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_MAX_CHARS,
+  DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+  DESTINATION_LIST_ITEM_MAX_CHARS,
+  DESTINATION_LIST_MAX_CHARS,
+  DESTINATION_LIST_MAX_ITEMS,
+  DESTINATION_NAME_MAX_CHARS,
+  DESTINATION_REGION_MAX_CHARS,
+  DESTINATION_SLUG_MAX_CHARS,
+  DESTINATION_SUMMARY_MAX_CHARS,
+} from "@/lib/destination-limits";
 
 export { isStorageImagePath };
 
@@ -40,6 +54,21 @@ export type DestinationFormInput = {
 
 export const DESTINATION_SELECT =
   "id, slug, name, region, hero_image, hero_image_alt, summary, description, highlights, suitable_for, featured, display_order, inquiry_destination_value, created_at, updated_at";
+
+export {
+  DESTINATION_DESCRIPTION_MAX_CHARS,
+  DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_MAX_CHARS,
+  DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+  DESTINATION_LIST_ITEM_MAX_CHARS,
+  DESTINATION_LIST_MAX_CHARS,
+  DESTINATION_LIST_MAX_ITEMS,
+  DESTINATION_NAME_MAX_CHARS,
+  DESTINATION_REGION_MAX_CHARS,
+  DESTINATION_SLUG_MAX_CHARS,
+  DESTINATION_SUMMARY_MAX_CHARS,
+} from "@/lib/destination-limits";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const destinationIdPattern =
@@ -138,7 +167,7 @@ function formText(formData: FormData, field: string, maximum: number): string {
 }
 
 function formList(formData: FormData, field: string, maximumItems: number): string[] {
-  const value = formText(formData, field, 4000);
+  const value = formText(formData, field, DESTINATION_LIST_MAX_CHARS);
   const items = value
     .split(/[\n,]/)
     .map((item) => item.trim())
@@ -150,27 +179,42 @@ function formList(formData: FormData, field: string, maximumItems: number): stri
     );
   }
 
-  if (items.some((item) => item.length > 160)) {
-    throw new Error(field + " values must be 160 characters or fewer.");
+  if (items.some((item) => item.length > DESTINATION_LIST_ITEM_MAX_CHARS)) {
+    throw new Error(
+      field +
+        " values must be " +
+        DESTINATION_LIST_ITEM_MAX_CHARS +
+        " characters or fewer.",
+    );
   }
 
   return [...new Set(items)];
 }
 
 export function parseDestinationForm(formData: FormData): DestinationFormInput {
-  const slug = formText(formData, "slug", 120).toLowerCase();
+  const slug = formText(formData, "slug", DESTINATION_SLUG_MAX_CHARS).toLowerCase();
   if (!slugPattern.test(slug)) {
     throw new Error(
       "slug must contain only lowercase letters, numbers, and single hyphens.",
     );
   }
 
-  const heroImage = formText(formData, "heroImage", 500);
+  const heroImage = formText(
+    formData,
+    "heroImage",
+    DESTINATION_HERO_IMAGE_MAX_CHARS,
+  );
   if (!heroImage.startsWith("/") && !isStorageImagePath(heroImage)) {
-    throw new Error("heroImage must be a local path or a validated Storage image path.");
+    throw new Error(
+      "heroImage must be a local path or a validated Storage image path.",
+    );
   }
 
-  const displayOrderText = formText(formData, "displayOrder", 10);
+  const displayOrderText = formText(
+    formData,
+    "displayOrder",
+    DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  );
   const displayOrder = Number(displayOrderText);
   if (!Number.isInteger(displayOrder) || displayOrder < 0 || displayOrder > 9999) {
     throw new Error("displayOrder must be an integer from 0 to 9999.");
@@ -178,17 +222,37 @@ export function parseDestinationForm(formData: FormData): DestinationFormInput {
 
   return {
     slug,
-    name: formText(formData, "name", 120),
-    region: formText(formData, "region", 120),
+    name: formText(formData, "name", DESTINATION_NAME_MAX_CHARS),
+    region: formText(formData, "region", DESTINATION_REGION_MAX_CHARS),
     heroImage,
-    heroImageAlt: formText(formData, "heroImageAlt", 300),
-    summary: formText(formData, "summary", 500),
-    description: formText(formData, "description", 5000),
-    highlights: formList(formData, "highlights", 20),
-    suitableFor: formList(formData, "suitableFor", 20),
+    heroImageAlt: formText(
+      formData,
+      "heroImageAlt",
+      DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+    ),
+    summary: formText(formData, "summary", DESTINATION_SUMMARY_MAX_CHARS),
+    description: formText(
+      formData,
+      "description",
+      DESTINATION_DESCRIPTION_MAX_CHARS,
+    ),
+    highlights: formList(
+      formData,
+      "highlights",
+      DESTINATION_LIST_MAX_ITEMS,
+    ),
+    suitableFor: formList(
+      formData,
+      "suitableFor",
+      DESTINATION_LIST_MAX_ITEMS,
+    ),
     featured: formData.get("featured") === "on" || formData.get("featured") === "true",
     displayOrder,
-    inquiryDestinationValue: formText(formData, "inquiryDestinationValue", 120),
+    inquiryDestinationValue: formText(
+      formData,
+      "inquiryDestinationValue",
+      DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+    ),
   };
 }
 
