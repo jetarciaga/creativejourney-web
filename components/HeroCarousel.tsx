@@ -12,6 +12,7 @@ const slides: Array<{ image: string; alt: string }> = [
   { image: "/hero/carousel_01.webp", alt: "Traditional boats in a bright turquoise Philippine lagoon" },
   { image: "/hero/carousel_02.webp", alt: "A Philippine island coastline viewed from the water" },
   { image: "/hero/carousel_03.webp", alt: "A tropical beach and clear water beneath a bright sky" },
+  { image: "/hero/carousel_04.webp", alt: "Friends celebrating on a tropical Philippine beach with inset scenes of a sunset skyline, an island viewpoint, snorkeling, and a boat trip" },
 ];
 
 export default function HeroCarousel() {
