@@ -1,25 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useState } from "react";
 import Button from "@/components/Button";
 import StoryImageField, {
   type StoryImageUploadState,
 } from "@/components/StoryImageField";
 import type { Story } from "@/lib/story-model";
 
-type StoryAction = (formData: FormData) => void | Promise<void>;
-
-function SubmitButton({ label, disabled }: { label: string; disabled: boolean }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button disabled={pending || disabled} type="submit">
-      {pending ? "Saving…" : label}
-    </Button>
-  );
-}
+type StoryActionState = { error: string };
+type StoryAction = (
+  prevState: StoryActionState,
+  formData: FormData,
+) => StoryActionState | Promise<StoryActionState>;
 
 export default function StoryEditor({
   initialStory,
@@ -32,11 +25,12 @@ export default function StoryEditor({
   action: StoryAction;
   submitLabel: string;
 }) {
+  const [state, formAction, pending] = useActionState(action, { error: "" });
   const [imageUploadState, setImageUploadState] =
     useState<StoryImageUploadState>("idle");
 
   return (
-    <form action={action} className="space-y-8">
+    <form action={formAction} className="space-y-8">
       <StoryImageField
         initialPath={initialStory?.coverImagePath ?? ""}
         initialPreviewUrl={initialImageUrl}
@@ -104,11 +98,19 @@ export default function StoryEditor({
         Published
       </label>
 
+      {state?.error ? (
+        <p className="border-l-2 border-accent pl-4 text-sm text-muted" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap gap-3 border-t border-border pt-6">
-        <SubmitButton
-          disabled={imageUploadState !== "idle"}
-          label={submitLabel}
-        />
+        <Button
+          disabled={pending || imageUploadState !== "idle"}
+          type="submit"
+        >
+          {pending ? "Saving…" : submitLabel}
+        </Button>
         <Link
           className="inline-flex min-h-[var(--site-tap-min)] items-center rounded-md border border-border px-5 py-3 text-sm font-semibold text-text transition hover:border-accent hover:text-accent"
           href="/admin/stories"

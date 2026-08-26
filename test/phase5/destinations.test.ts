@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
+  DESTINATION_DESCRIPTION_MAX_CHARS,
+  DESTINATION_DISPLAY_ORDER_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_ALT_MAX_CHARS,
+  DESTINATION_HERO_IMAGE_MAX_CHARS,
+  DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+  DESTINATION_LIST_ITEM_MAX_CHARS,
+  DESTINATION_LIST_MAX_CHARS,
+  DESTINATION_LIST_MAX_ITEMS,
+  DESTINATION_NAME_MAX_CHARS,
+  DESTINATION_REGION_MAX_CHARS,
+  DESTINATION_SLUG_MAX_CHARS,
+  DESTINATION_SUMMARY_MAX_CHARS,
   destinationFromRow,
   parseDestinationForm,
 } from "@/lib/destination-model";
@@ -91,5 +103,70 @@ describe("destinations data contract", () => {
     expect(migration).toMatch(/hero_image_alt\s+text\s+NOT NULL/i);
     expect(migration).toMatch(/ENABLE ROW LEVEL SECURITY/i);
     expect(migration).toMatch(/FOR SELECT\s+TO anon, authenticated/i);
+  });
+
+  it("exports the character limits enforced by the destination parser", () => {
+    expect(DESTINATION_SLUG_MAX_CHARS).toBe(120);
+    expect(DESTINATION_NAME_MAX_CHARS).toBe(120);
+    expect(DESTINATION_REGION_MAX_CHARS).toBe(120);
+    expect(DESTINATION_HERO_IMAGE_MAX_CHARS).toBe(500);
+    expect(DESTINATION_HERO_IMAGE_ALT_MAX_CHARS).toBe(300);
+    expect(DESTINATION_SUMMARY_MAX_CHARS).toBe(500);
+    expect(DESTINATION_DESCRIPTION_MAX_CHARS).toBe(5000);
+    expect(DESTINATION_DISPLAY_ORDER_MAX_CHARS).toBe(10);
+    expect(DESTINATION_LIST_MAX_CHARS).toBe(4000);
+    expect(DESTINATION_LIST_MAX_ITEMS).toBe(20);
+    expect(DESTINATION_LIST_ITEM_MAX_CHARS).toBe(160);
+    expect(DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS).toBe(120);
+
+    const scalarLimits = [
+      ["slug", DESTINATION_SLUG_MAX_CHARS, "a"],
+      ["name", DESTINATION_NAME_MAX_CHARS, "x"],
+      ["region", DESTINATION_REGION_MAX_CHARS, "x"],
+      ["heroImage", DESTINATION_HERO_IMAGE_MAX_CHARS, "x"],
+      ["heroImageAlt", DESTINATION_HERO_IMAGE_ALT_MAX_CHARS, "x"],
+      ["summary", DESTINATION_SUMMARY_MAX_CHARS, "x"],
+      ["description", DESTINATION_DESCRIPTION_MAX_CHARS, "x"],
+      ["displayOrder", DESTINATION_DISPLAY_ORDER_MAX_CHARS, "1"],
+      [
+        "inquiryDestinationValue",
+        DESTINATION_INQUIRY_DESTINATION_VALUE_MAX_CHARS,
+        "x",
+      ],
+    ] as const;
+
+    for (const [field, maximum, character] of scalarLimits) {
+      const formData = validFormData();
+      formData.set(field, character.repeat(maximum + 1));
+      expect(() => parseDestinationForm(formData)).toThrow(
+        `${field} must be ${maximum} characters or fewer.`,
+      );
+    }
+
+    const listTextLimit = validFormData();
+    listTextLimit.set("highlights", "x".repeat(DESTINATION_LIST_MAX_CHARS + 1));
+    expect(() => parseDestinationForm(listTextLimit)).toThrow(
+      `highlights must be ${DESTINATION_LIST_MAX_CHARS} characters or fewer.`,
+    );
+
+    const itemLimit = validFormData();
+    itemLimit.set(
+      "suitableFor",
+      "x".repeat(DESTINATION_LIST_ITEM_MAX_CHARS + 1),
+    );
+    expect(() => parseDestinationForm(itemLimit)).toThrow(
+      "suitableFor values must be 160 characters or fewer.",
+    );
+
+    const itemCountLimit = validFormData();
+    itemCountLimit.set(
+      "highlights",
+      Array.from({ length: DESTINATION_LIST_MAX_ITEMS + 1 }, (_, index) =>
+        `item ${index}`,
+      ).join("\n"),
+    );
+    expect(() => parseDestinationForm(itemCountLimit)).toThrow(
+      `highlights must contain between 1 and ${DESTINATION_LIST_MAX_ITEMS} values.`,
+    );
   });
 });
